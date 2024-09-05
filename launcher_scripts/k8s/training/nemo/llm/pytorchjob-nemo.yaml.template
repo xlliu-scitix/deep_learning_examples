@@ -1,0 +1,91 @@
+apiVersion: kubeflow.org/v1
+kind: PyTorchJob
+metadata:
+  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-ckpt${ENABLE_CKPT}-${RUN_ID}
+spec: 
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec: &job-spec
+          containers:
+          - args:
+            - "sleep 1 && echo $NODE_NAME && export NODE_RANK=$RANK &&  unset RANK && \
+               export CUDA_DEVICE_MAX_CONNECTIONS=1 && export PATH=$PATH:${DEEP_LEARNING_EXAMPLES_DIR}/bin && \
+               cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${GPU_TYPE}/${MODEL} && \
+               DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
+               RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP CP=$CP MAX_STEPS=${MAX_STEPS} \
+               ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
+               bash run_nemo_${MODEL}.sh"
+            command:
+            - /usr/bin/env
+            - bash
+            - -c
+            env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: TZ
+              value: CST-8
+            - name: UCX_ALLOC
+              value: "md,mmap,heap"
+            - name:  UCX_MM_HUGETLB_MODE
+              value: "n"
+            - name: NCCL_IB_QPS_PER_CONNECTION
+              value: "2"
+            - name: NCCL_NVLS_ENABLE
+              value: "0"
+            - name: NCCL_NET_GDR_LEVEL
+              value: "3"
+            - name: NCCL_IB_TIMEOUT
+              value: "22"
+            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.05.llama3.1-scitix
+            imagePullPolicy: Always 
+            name: pytorch
+            resources:
+              limits:
+                cpu: "80"
+                memory: 800Gi
+                nvidia.com/gpu: "8"
+                rdma/hca_shared_devices_all: "1"
+              requests:
+                cpu: "80"
+                memory: 800Gi
+                nvidia.com/gpu: "8"
+                rdma/hca_shared_devices_all: "1"
+            securityContext:
+              capabilities:
+                add:
+                - IPC_LOCK
+            volumeMounts:
+            - mountPath: /dev/shm
+              name: dev-shm
+            - mountPath: /workspace/deep_learning_examples
+              name: data
+          volumes:
+          - emptyDir:
+              medium: Memory
+            name: dev-shm
+          - hostPath:
+              path: /data/deep_learning_examples
+              type: ""
+            name: data
+ 
+    Worker:
+      replicas: $WORKER_NUMS
+      restartPolicy: Never
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          <<: *job-spec
