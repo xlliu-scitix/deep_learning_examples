@@ -13,17 +13,44 @@ fi
 MODEL="neva_llama2_13b_chat_bf16"
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
+PRETRAINED_LLM_PATH=${PRETRAINED_LLM_PATH:-/models/preset/scitix/hf-to-nemo/Llama-2-13b-chat/}
+PRETRAINED_VISION_ENCODER_PATH=${PRETRAINED_VISION_ENCODER_PATH:-/models/preset/openai/clip-vit-large-patch14-336/}
+DATASET_DIR=${DATASET_DIR:-/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K/}
+
+
+TP=${TP:-8}
+PP=${PP:-1}
+GBS=${GBS:-256}
+MBS=${MBS:-32}
+
+# Check if the world_size is divisable by TP * PP
+global_world_size=$((WORLD_SIZE * 8))
+divisor=$((TP * PP))
+if (( global_world_size % divisor != 0 )); then
+        echo "global_world_size ${global_world_size} is not divisible by TP ${TP} * PP ${PP}"
+        exit 1
+fi
+
+# Check if the GBS is divisable by MBS * DP * PP
+DP=$((global_world_size / divisor))
+divisor=$((DP * MBS * PP))
+if (( GBS % divisor != 0 )); then
+        echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP}) times ${PP}"
+        coefficient=$((GBS / divisor + 1))
+        GBS=$((coefficient * divisor))
+        echo "Set GBS=${GBS}"
+fi
 
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} \
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-PRETRAINED_LLM_PATH=${PRETRAINED_LLM_PATH:-/models/preset/scitix/hf-to-nemo/Llama-2-13b-chat/} \
-PRETRAINED_VISION_ENCODER_PATH=${PRETRAINED_VISION_ENCODER_PATH:-/models/preset/openai/clip-vit-large-patch14-336/} \
-DATASET_DIR=${DATASET_DIR:-/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K/} \
-TP=${TP:-8} \
-PP=${PP:-1} \
+PRETRAINED_LLM_PATH=${PRETRAINED_LLM_PATH} \
+PRETRAINED_VISION_ENCODER_PATH=${PRETRAINED_VISION_ENCODER_PATH} \
+DATASET_DIR=${DATASET_DIR} \
+TP=${TP} \
+PP=${PP} \
 SEQ_LEN=4096 \
-GBS=${GBS:-256} \
-MBS=${MBS:-32} \
+GBS=${GBS} \
+MBS=${MBS} \
 MAX_STEP=${MAX_STEP:-2170} \
 JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
 MODEL=${MODEL} \

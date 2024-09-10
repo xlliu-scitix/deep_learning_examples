@@ -1,8 +1,8 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-ckpt${ENABLE_CKPT}-${RUN_ID}
-  namespace: t-hisys-xlliu
+  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-${RUN_ID}
+  namespace: default
 spec: 
   pytorchReplicaSpecs:
     Master:
@@ -15,8 +15,8 @@ spec:
         spec: &job-spec
           containers:
           - args:
-            - "echo $NODE_NAME && export NODE_RANK=$RANK &&  unset RANK && export CUDA_DEVICE_MAX_CONNECTIONS=1 && \
-               cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva && \
+            - "sleep 1 && echo $NODE_NAME && export NODE_RANK=$RANK &&  unset RANK && export CUDA_DEVICE_MAX_CONNECTIONS=1 && \
+               cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva && export PATH=$PATH:${DEEP_LEARNING_EXAMPLES_DIR}/bin && \
                DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
                PRETRAINED_LLM_PATH=${PRETRAINED_LLM_PATH} \
 	       PRETRAINED_VISION_ENCODER_PATH=${PRETRAINED_VISION_ENCODER_PATH} \
@@ -51,7 +51,7 @@ spec:
               value: "3"
             - name: NCCL_IB_TIMEOUT
               value: "22"
-            image: registry-ap-southeast.scitix.ai/siflow/nemo:24.07-a8f07bee
+            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07
             imagePullPolicy: Always 
             name: pytorch
             resources:
@@ -72,31 +72,28 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /data
+            - mountPath: /workspace/deep_learning_examples
               name: data
             - mountPath: /models/preset
-              name: siflow-models-hisys-xlliu
+              name: models
             - mountPath: /datasets/preset
-              name: siflow-datasets-hisys-xlliu
+              name: datasets
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
-          - name: data
-            persistentVolumeClaim:
-              claimName: xlliu-test
-          - name: siflow-models-hisys-xlliu 
-            persistentVolumeClaim:
-              claimName: siflow-models
-              readOnly: true
-          - name: siflow-datasets-hisys-xlliu 
-            persistentVolumeClaim:
-              claimName: siflow-datasets
-              readOnly: true
-          #- hostPath:
-          #    path: /data
-          #    type: ""
-          #  name: data
+          - hostPath:
+              path: /data/scitix/deep_learning_examples
+              type: ""
+            name: data
+          - hostPath:
+              path: /data/scitix/models/preset
+              type: ""
+            name: models
+          - hostPath:
+              path: /data/scitix/datasets/preset
+              type: ""
+            name: datasets
           tolerations:
             - effect: NoSchedule
               key: node.kubernetes.io/unschedulable
@@ -110,11 +107,6 @@ spec:
                         operator: In
                         values:
                           - h100nvlink80
-                      #- key: test0829
-                      #  operator: In
-                      #  values:
-                      #    - "true"
-
     Worker:
       replicas: $WORKER_NUMS
       restartPolicy: Never
@@ -122,5 +114,7 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
+          labels:
+            scitix.ai/topo-aware-in-node: "true"
         spec:
           <<: *job-spec

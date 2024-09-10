@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -x
-GPU_NUMS=${GPU_NUMS:-128}
+GPU_NUMS=${GPU_NUMS:-8}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
     WORLD_SIZE=1
@@ -10,19 +10,19 @@ else
     WORLD_SIZE=$((GPU_NUMS / 8))
 fi
 
-MODEL="llama2_70b_bf16"
+MODEL="llama2_13b_bf16"
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} \
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-TP=${TP:-4} \
+TP=${TP:-1} \
 PP=${PP:-4} \
 CP=0 \
 SEQ_LEN=4096 \
-GBS=${GBS:-2048} \
+GBS=${GBS:-128} \
 MBS=${MBS:-1} \
-MAX_STEPS=${MAX_STEPS:-128} \
+MAX_STEPS=${MAX_STEPS:-16} \
 JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
 MODEL=${MODEL} \
 RUN_ID=$(date +"%m%dt%H%M%S") \

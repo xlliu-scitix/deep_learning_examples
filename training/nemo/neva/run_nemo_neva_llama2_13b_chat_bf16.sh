@@ -39,7 +39,7 @@ DATASET_DIR=${DATASET_DIR:-/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K/}
 
 # setup experiment result dir
 MODEL_DIR=${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva
-CURR_TIME=$(date +"%m%dT%H%M")
+CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
 RUN_ID=${RUN_ID:-${CURR_TIME}}
 RESULTS_DIR=${BASE_RESULTS_DIR}/${MODEL}/tp${TP}_pp${PP}_n$((WORLD_SIZE * 8))_gbs${GBS}_mbs${MBS}_${RUN_ID}
 
@@ -55,7 +55,10 @@ fi
 DP=$((global_world_size / divisor))
 divisor=$((DP * MBS * PP))
 if (( GBS % divisor != 0 )); then
-	echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP})"
+        echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP}) times ${PP}"
+        coefficient=$((GBS / divisor + 1))
+        GBS=$((coefficient * divisor))
+        echo "GBS must be set ${GBS} at least"
 	exit 1
 fi
 
@@ -71,7 +74,10 @@ if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
 	WORLD_SIZE=$WORLD_SIZE GBS=$GBS MBS=$MBS PP=$PP VPP=$VPP TP=$TP MAX_STEPS=$MAX_STEPS RESULTS_DIR=${RESULTS_DIR} \
                 envsubst < ${MODEL_DIR}/${MODEL}_hydra.yaml  > ${RESULTS_DIR}/${MODEL}_hydra.yaml
 else
-        sleep 5
+        while [ ! -f "${RESULTS_DIR}/${MODEL}_hydra.yaml" ]; do
+                echo "${RESULTS_DIR}/${MODEL}_hydra.yaml not exist, waiting..."
+                sleep 5
+        done
 fi
 
 # command 1

@@ -38,7 +38,7 @@ MAX_STEPS=${MAX_STEPS:-128}
 
 # setup experiment result dir
 MODEL_DIR=${MODEL_DIR:-"${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/h100/${MODEL}"}
-CURR_TIME=$(date +"%m%dT%H%M")
+CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
 RUN_ID=${RUN_ID:-${CURR_TIME}}
 RESULTS_DIR=${BASE_RESULTS_DIR}/${MODEL}/tp${TP}_pp${PP}_cp${CP}_n$((WORLD_SIZE * 8))_gbs${GBS}_mbs${MBS}_${RUN_ID}
 
@@ -68,7 +68,10 @@ if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
         WORLD_SIZE=$WORLD_SIZE GBS=$GBS MBS=$MBS PP=$PP VPP=$VPP TP=$TP CP=$CP MAX_STEPS=$MAX_STEPS RESULTS_DIR=${RESULTS_DIR} \
                 envsubst < ${MODEL_DIR}/${MODEL}_hydra.yaml  > ${RESULTS_DIR}/${MODEL}_hydra.yaml
 else
-        sleep 5
+        while [ ! -f "${RESULTS_DIR}/${MODEL}_hydra.yaml" ]; do
+                echo "${RESULTS_DIR}/${MODEL}_hydra.yaml not exist, waiting..."
+                sleep 5
+        done
 fi
 
 # command 1

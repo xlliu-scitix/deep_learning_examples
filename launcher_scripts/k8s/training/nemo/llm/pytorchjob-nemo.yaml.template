@@ -2,6 +2,7 @@ apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
   name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-ckpt${ENABLE_CKPT}-${RUN_ID}
+  namespace: default
 spec: 
   pytorchReplicaSpecs:
     Master:
@@ -11,6 +12,8 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
+          labels:
+            scitix.ai/topo-aware-in-node: "true"
         spec: &job-spec
           containers:
           - args:
@@ -71,15 +74,39 @@ spec:
               name: dev-shm
             - mountPath: /workspace/deep_learning_examples
               name: data
+            - mountPath: /models/preset
+              name: models
+            - mountPath: /datasets/preset
+              name: datasets
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
           - hostPath:
-              path: /data/deep_learning_examples
+              path: /data/scitix/deep_learning_examples
               type: ""
             name: data
- 
+          - hostPath:
+              path: /data/scitix/models/preset
+              type: ""
+            name: models
+          - hostPath:
+              path: /data/scitix/datasets/preset
+              type: ""
+            name: datasets
+          tolerations:
+            - effect: NoSchedule
+              key: node.kubernetes.io/unschedulable
+              operator: Exists
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: scitix.ai/gpu-type
+                        operator: In
+                        values:
+                          - h100nvlink80
     Worker:
       replicas: $WORKER_NUMS
       restartPolicy: Never
@@ -87,5 +114,7 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
+          labels:
+            scitix.ai/topo-aware-in-node: "true"
         spec:
           <<: *job-spec

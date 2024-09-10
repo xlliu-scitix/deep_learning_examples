@@ -20,17 +20,17 @@ UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-False}
 export TOKENIZERS_PARALLELISM=${UB_TP_COMM_OVERLAP}
 
 # setup workspace dir and base result dir
-MODEL="llama2_70b_bf16"
+MODEL="llama2_13b_bf16"
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-/workspace/deep_learning_examples}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
 # setup training parameters
-WORLD_SIZE=${WORLD_SIZE:-4}
-TP=${TP:-4}
+WORLD_SIZE=${WORLD_SIZE:-1}
+TP=${TP:-1}
 PP=${PP:-4}
-VPP=${VPP:-5}
+VPP=${VPP:-10}
 SEQ_LEN=4096
-GBS=${GBS:-2048}
+GBS=${GBS:-128}
 MBS=${MBS:-1}
 MAX_STEPS=${MAX_STEPS:-128}
 
@@ -52,7 +52,7 @@ fi
 dp=$((global_world_size / divisor))
 divisor=$((dp * MBS * PP))
 if (( GBS % divisor != 0 )); then
-	echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP})"
+	echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP} times ${PP})"
 	exit 1
 fi
 
@@ -67,10 +67,10 @@ if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
         WORLD_SIZE=$WORLD_SIZE GBS=$GBS MBS=$MBS PP=$PP VPP=$VPP TP=$TP MAX_STEPS=$MAX_STEPS RESULTS_DIR=${RESULTS_DIR} \
                 envsubst < ${MODEL_DIR}/${MODEL}_hydra.yaml  > ${RESULTS_DIR}/${MODEL}_hydra.yaml
 else
-        while [ ! -f "${RESULTS_DIR}/${MODEL}_hydra.yaml" ]; do
-                echo "${RESULTS_DIR}/${MODEL}_hydra.yaml not exist, waiting..."
-                sleep 5
-        done
+	while [ ! -f "${RESULTS_DIR}/${MODEL}_hydra.yaml" ]; do 
+		echo "${RESULTS_DIR}/${MODEL}_hydra.yaml not exist, waiting..."
+        	sleep 5
+	done
 fi
 
 # command 1
@@ -79,8 +79,7 @@ bash -c "
   git rev-parse HEAD;
   export PYTHONPATH=/opt/NeMo:\${PYTHONPATH};
   (echo PYT$"NVIDIA_PYTORCH_VERSION" &&                 git --git-dir=/opt/NeMo/.git log -n 5 --format='NeMo;%h;%aD;%s' &&                 git --git-dir=/opt/megatron-lm/.git log -n 5 --format='megatron-lm;%h;%aD;%s') > ${RESULTS_DIR}/git_log.txt;
-  CUDA_DEVICE_MAX_CONNECTIONS=1 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 NVTE_FWD_LAYERNORM_SM_MARGIN=\$(python3 /opt/NeMo-Framework-Launcher/launcher_scripts/nemo_launcher/collections/conditional_cfgs.py name=get_ln_sm_margin) NVTE_BWD_LAYERNORM_SM_MARGIN=\$(python3 /opt/NeMo-Framework-Launcher/launcher_scripts/nemo_launcher/collections/conditional_cfgs.py name=get_ln_sm_margin) NVTE_UB_SPLIT_AG=\$(python3 /opt/NeMo-Framework-Launcher/launcher_scripts/nemo_launcher/collections/conditional_cfgs.py name=get_ag_overlap fp8=False ) \
+  CUDA_DEVICE_MAX_CONNECTIONS=1 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 NVTE_FWD_LAYERNORM_SM_MARGIN=\$(python3 /opt/NeMo-Framework-Launcher/launcher_scripts/nemo_launcher/collections/conditional_cfgs.py name=get_ln_sm_margin) NVTE_BWD_LAYERNORM_SM_MARGIN=\$(python3 /opt/NeMo-Framework-Launcher/launcher_scripts/nemo_launcher/collections/conditional_cfgs.py name=get_ln_sm_margin) \
   torchrun --nnodes=${WORLD_SIZE} --nproc_per_node=8 --rdzv-backend=c10d --rdzv-endpoint=${MASTER_ADDR:-127.0.0.1} /opt/NeMo/examples/nlp/language_modeling/megatron_gpt_pretraining.py  \
   --config-path=${RESULTS_DIR} \
-  --config-name=${MODEL}_hydra.yaml \
-  model.gc_interval=100 " 2>&1 | tee ${RESULTS_DIR}/log_${MODEL}_${RUN_ID}.out
+  --config-name=${MODEL}_hydra.yaml " 2>&1 | tee ${RESULTS_DIR}/log_${MODEL}_${RUN_ID}.out
