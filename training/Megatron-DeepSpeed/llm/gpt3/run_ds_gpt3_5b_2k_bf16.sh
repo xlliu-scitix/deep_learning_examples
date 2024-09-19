@@ -152,10 +152,10 @@ TRAINING_ARGS=(
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
-TRAINING_ARGS+=(
-    --save ${CHECKPOINT_PATH}
-    --load ${LOAD_CHECKPOINT_PATH}
-)
+  TRAINING_ARGS+=(
+      --save ${CHECKPOINT_PATH}
+      --load ${LOAD_CHECKPOINT_PATH}
+  )
 fi
 
 MODEL_PARALLEL_ARGS=(
@@ -183,13 +183,11 @@ EVAL_AND_LOGGING_ARGS=(
     --log-interval $LOG_INTERVAL
     --save-interval $SAVE_INTERVAL
     --eval-interval $EVAL_INTERVAL 
-    --save $CHECKPOINT_PATH 
-    --load $LOAD_CHECKPOINT_PATH 
     --eval-iters $EVAL_ITERS
     --tensorboard-dir $TENSORBOARD_LOGS_DIR
 )
 
-torchrun ${DISTRIBUTED_ARGS[@]} pretrain_gpt.py \
+torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-DeepSpeed/pretrain_gpt.py \
     ${MODEL_ARGS[@]} \
     ${TRAINING_ARGS[@]} \
     ${MODEL_PARALLEL_ARGS[@]} \
