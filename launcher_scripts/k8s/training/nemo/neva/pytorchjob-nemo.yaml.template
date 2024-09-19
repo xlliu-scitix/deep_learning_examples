@@ -52,6 +52,8 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
+            - mountPath: /tmp
+              name: tmp
             - mountPath: /workspace/deep_learning_examples
               name: data
             - mountPath: /models/preset
@@ -62,6 +64,10 @@ spec:
           - emptyDir:
               medium: Memory
             name: dev-shm
+          - hostPath:
+              path: /data/scitix/tmp
+              type: ""
+            name: tmp
           - hostPath:
               path: /data/scitix/deep_learning_examples
               type: "DirectoryOrCreate"

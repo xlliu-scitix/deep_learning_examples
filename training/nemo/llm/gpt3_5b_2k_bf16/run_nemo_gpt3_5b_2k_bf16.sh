@@ -20,18 +20,18 @@ unset RANK
 #export TOKENIZERS_PARALLELISM=${UB_TP_COMM_OVERLAP}
 
 # setup workspace dir and base result dir
-MODEL="gpt3_175b_2k_bf16"
+MODEL="gpt3_5b_2k_bf16"
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-/workspace/deep_learning_examples}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
 # setup training parameters
-WORLD_SIZE=${WORLD_SIZE:-16}
-TP=${TP:-4}
-PP=${PP:-8}
-VPP=${VPP:-6}
-CP=${CP:-1}
+WORLD_SIZE=${WORLD_SIZE:-1}
+TP=${TP:-1}
+PP=${PP:-1}
+VPP=null
+CP=1
 GBS=${GBS:-2048}
-MBS=${MBS:-1}
+MBS=${MBS:-4}
 MAX_STEPS=${MAX_STEPS:-128}
 
 # setup experiment result dir
@@ -80,8 +80,6 @@ bash -c "
   git rev-parse HEAD;
   export PYTHONPATH=/opt/NeMo:\${PYTHONPATH};
   (echo PYT$"NVIDIA_PYTORCH_VERSION" &&                 git --git-dir=/opt/NeMo/.git log -n 5 --format='NeMo;%h;%aD;%s' &&                 git --git-dir=/opt/megatron-lm/.git log -n 5 --format='megatron-lm;%h;%aD;%s') > ${RESULTS_DIR}/git_log.txt;
-  CUDA_DEVICE_MAX_CONNECTIONS=1 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 NVTE_FWD_LAYERNORM_SM_MARGIN=\$(python3 /opt/NeMo-Framework-Launcher/launcher_scripts/nemo_launcher/collections/conditional_cfgs.py name=get_ln_sm_margin) \
-  torchrun --nnodes=${WORLD_SIZE} --nproc_per_node=8 --rdzv-backend=c10d --rdzv-endpoint=${MASTER_ADDR:-127.0.0.1} /opt/NeMo/examples/nlp/language_modeling/megatron_gpt_pretraining.py  \
+  CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 torchrun --nnodes=${WORLD_SIZE} --nproc_per_node=8 --rdzv-backend=c10d --rdzv-endpoint=${MASTER_ADDR:-127.0.0.1} /opt/NeMo/examples/nlp/language_modeling/megatron_gpt_pretraining.py  \
   --config-path=${RESULTS_DIR} \
-  --config-name=${MODEL}_hydra.yaml \
-  model.gc_interval=100 " 2>&1 | tee ${RESULTS_DIR}/log_${MODEL}_${RUN_ID}.out
+  --config-name=${MODEL}_hydra.yaml" 2>&1 | tee ${RESULTS_DIR}/log_${MODEL}_${RUN_ID}.out

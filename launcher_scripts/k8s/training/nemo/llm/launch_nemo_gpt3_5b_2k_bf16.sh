@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -x
-GPU_NUMS=${GPU_NUMS:-64}
+GPU_NUMS=${GPU_NUMS:-8}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
     WORLD_SIZE=1
@@ -10,15 +10,15 @@ else
     WORLD_SIZE=$((GPU_NUMS / 8))
 fi
 
-MODEL="ds_gpt3_175b_2k_bf16" 
+MODEL="gpt3_5b_2k_bf16" 
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"} 
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
-TP=${TP:-8}
-PP=${PP:-8}
+TP=${TP:-1}
+PP=${PP:-1}
 SEQ_LEN=2048
-GBS=${GBS:-2048}
-MBS=${MBS:-1}
+GBS=${GBS:-1440}
+MBS=${MBS:-4}
 # Check if the world_size is divisable by TP * PP
 global_world_size=$((WORLD_SIZE * 8))
 divisor=$((TP * PP))
@@ -39,6 +39,7 @@ fi
 
 MAX_STEPS=${MAX_STEPS:-128}
 ENABLE_CKPT=${ENABLE_CKPT:-0}
+UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-0}
 RUN_ID=$(date +"%m%dt%H%M")
 
 # Get the directory of the current script
@@ -50,8 +51,8 @@ GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
 RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
 CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
     RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
-    ENABLE_CKPT=${ENABLE_CKPT} \
-    bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-DeepSpeed/llm/gpt3/run_${MODEL}.sh" \
-python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
+    ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
+    bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${MODEL}/run_nemo_${MODEL}.sh" \
+python3 $envsubst_py -i pytorchjob-nemo.yaml.template -o pytorchjob-nemo.yaml
 
-kubectl apply -f pytorchjob.yaml
+kubectl apply -f pytorchjob-nemo.yaml

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -x
-GPU_NUMS=${GPU_NUMS:-32}
+GPU_NUMS=${GPU_NUMS:-64}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
     WORLD_SIZE=1
@@ -14,7 +14,7 @@ MODEL="meg_lm_gpt3_175b_2k_bf16"
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"} 
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
-TP=${TP:-4}
+TP=${TP:-8}
 PP=${PP:-8}
 SEQ_LEN=2048
 GBS=${GBS:-2048}

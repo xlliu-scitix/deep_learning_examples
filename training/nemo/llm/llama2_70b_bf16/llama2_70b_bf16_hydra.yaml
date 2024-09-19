@@ -12,7 +12,7 @@ trainer:
   accelerator: gpu
   precision: bf16
   logger: false
-  enable_checkpointing: ${ENABLE_CKPT}
+  enable_checkpointing: False
   use_distributed_sampler: False
   max_epochs: null
   max_steps: ${MAX_STEPS}
