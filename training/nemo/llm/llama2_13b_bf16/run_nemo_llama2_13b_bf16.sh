@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 # setup env
 export NCCL_IB_TIMEOUT=22
@@ -10,8 +10,6 @@ export NCCL_NVLS_ENABLE=0
 export NVTE_DP_AMAX_REDUCE_INTERVAL=0
 export NVTE_ASYNC_AMAX_REDUCTION=1
 export NVTE_FUSED_ATTN=0
-export UCX_ALLOC=md,mmap,heap
-export UCX_MM_HUGETLB_MODE=n
 export NCCL_IB_QPS_PER_CONNECTION=2
 export NCCL_NET_GDR_LEVEL=3
 export NODE_RANK=${RANK:-0}
@@ -48,16 +46,18 @@ if (( global_world_size % divisor != 0 )); then
 	exit 1
 fi
 
-# Check if the GBS is divisable by MBS * DP * PP
-dp=$((global_world_size / divisor))
-divisor=$((dp * MBS * PP))
+# Check if the GBS is divisable by MBS * DP
+DP=$((global_world_size / divisor))
+divisor=$((DP * MBS))
 if (( GBS % divisor != 0 )); then
-	echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP} times ${PP})"
+	echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP})"
 	exit 1
 fi
 
 # generate the config file.
 # If there is no NFS, generate the config file on each rank. Otherwise, generate the config file on rank 0.
+SCRIPT_DIR=$(realpath $(dirname $0)) # Get the directory of the current script
+envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 NFS=${NFS:-True}
 if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
         mkdir -p ${RESULTS_DIR}
@@ -65,7 +65,7 @@ if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
 	UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
         TOKENIZER_MODEL=${DEEP_LEARNING_EXAMPLES_DIR}/data/tokenizer.model \
         WORLD_SIZE=$WORLD_SIZE GBS=$GBS MBS=$MBS PP=$PP VPP=$VPP TP=$TP MAX_STEPS=$MAX_STEPS RESULTS_DIR=${RESULTS_DIR} \
-                envsubst < ${MODEL_DIR}/${MODEL}_hydra.yaml  > ${RESULTS_DIR}/${MODEL}_hydra.yaml
+                python3 $envsubst_py -i ${MODEL_DIR}/${MODEL}_hydra.yaml -o ${RESULTS_DIR}/${MODEL}_hydra.yaml
 else
 	while [ ! -f "${RESULTS_DIR}/${MODEL}_hydra.yaml" ]; do 
 		echo "${RESULTS_DIR}/${MODEL}_hydra.yaml not exist, waiting..."

@@ -40,18 +40,19 @@ fi
 MAX_STEPS=${MAX_STEPS:-128}
 ENABLE_CKPT=${ENABLE_CKPT:-0}
 UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-0}
-RUN_ID=$(date +"%m%dt%H%M%S")
+RUN_ID=$(date +"%m%dt%H%M")
 
-envsubst_py=$(echo "`pwd`" |awk -F 'launcher_scripts' '{print $1"/launcher_scripts/envsubst.py"}')
+# Get the directory of the current script
+SCRIPT_DIR=$(realpath $(dirname $0))
+envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 
 JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
 GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
 RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
-CMD="cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${MODEL} && \
-    DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
+CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
     RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP CP=$CP MAX_STEPS=${MAX_STEPS} \
     ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
-    bash run_nemo_${MODEL}.sh"
+    bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${MODEL}/run_nemo_${MODEL}.sh" \
 python3 $envsubst_py -i pytorchjob-nemo.yaml.template -o pytorchjob-nemo.yaml
 
 kubectl apply -f pytorchjob-nemo.yaml

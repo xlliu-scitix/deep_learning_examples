@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-ckpt${ENABLE_CKPT}-${RUN_ID}
+  name: gpt3-175b-2k-bf16-n32-gbs2048-ckpt0-0919t0811
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -17,7 +17,7 @@ spec:
         spec: &job-spec
           containers:
           - args:
-            - "export NODE_RANK=$RANK && unset RANK && ${CMD}"
+            - "export NODE_RANK=$RANK && unset RANK && DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples BASE_RESULTS_DIR=/workspace/deep_learning_examples/results     RUN_ID=0919t0811 GBS=2048 MBS=1 PP=8 TP=4 CP=1 MAX_STEPS=10     ENABLE_CKPT=0 UB_TP_COMM_OVERLAP=0     bash /workspace/deep_learning_examples/training/nemo/llm/gpt3_175b_2k_bf16/run_nemo_gpt3_175b_2k_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -75,7 +75,7 @@ spec:
           - hostPath:
               path: /data/scitix/datasets/preset
               type: "DirectoryOrCreate"
-            name: datasets         
+            name: datasets
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -86,7 +86,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: $WORKER_NUMS
+      replicas: 3
       restartPolicy: Never
       template:
         metadata:

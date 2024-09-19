@@ -6,8 +6,8 @@ set -ex
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NCCL_IB_TIMEOUT=22
 # export NCCL_NVLS_ENABLES=0
-# export NCCL_NET_GDR_LEVEL=2
-# export NCCL_IB_QPS_PER_CONNECTION=2
+export NCCL_NET_GDR_LEVEL=3
+export NCCL_IB_QPS_PER_CONNECTION=2
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
@@ -52,7 +52,7 @@ EVAL_INTERVAL=${EVAL_INTERVAL:-1000}
 LOG_INTERVAL=${LOG_INTERVAL:-10}
 
 # Deepspeed Configuration
-ZERO_STAGE=${ZERO_STAGE:-1}
+ZERO_STAGE=${ZERO_STAGE:-2}
 DS_CONFIG=${OUTPUT_DIR}/ds_config.json
 cat <<EOT > $DS_CONFIG
 {

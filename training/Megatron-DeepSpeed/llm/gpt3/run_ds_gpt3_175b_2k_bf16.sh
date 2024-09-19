@@ -6,8 +6,8 @@ set -ex
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NCCL_IB_TIMEOUT=22
 # export NCCL_NVLS_ENABLES=0
-# export NCCL_NET_GDR_LEVEL=2
-# export NCCL_IB_QPS_PER_CONNECTION=2
+export NCCL_NET_GDR_LEVEL=3
+export NCCL_IB_QPS_PER_CONNECTION=2
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}

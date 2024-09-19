@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -x
-GPU_NUMS=${GPU_NUMS:-128}
+GPU_NUMS=${GPU_NUMS:-8}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
     WORLD_SIZE=1
@@ -44,9 +44,11 @@ fi
 MAX_STEPS=${MAX_STEPS:-2170}
 ENABLE_CKPT=${ENABLE_CKPT:-0}
 UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-0}
-RUN_ID=$(date +"%m%dt%H%M%S")
+RUN_ID=$(date +"%m%dt%H%M")
 
-envsubst_py=$(echo "`pwd`" |awk -F 'launcher_scripts' '{print $1"/launcher_scripts/envsubst.py"}')
+# Get the directory of the current script
+SCRIPT_DIR=$(realpath $(dirname $0))
+envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 
 JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
 GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
