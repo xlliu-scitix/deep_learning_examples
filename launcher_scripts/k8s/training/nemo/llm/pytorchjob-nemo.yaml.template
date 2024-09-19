@@ -76,10 +76,6 @@ spec:
               path: /data/scitix/datasets/preset
               type: "DirectoryOrCreate"
             name: datasets
-          tolerations:
-            - effect: NoSchedule
-              key: node.kubernetes.io/unschedulable
-              operator: Exists
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:

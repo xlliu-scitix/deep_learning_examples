@@ -10,7 +10,7 @@ else
     WORLD_SIZE=$((GPU_NUMS / 8))
 fi
 
-MODEL="gpt3_175b_2k_bf16" 
+MODEL="ds_gpt3_175b_2k_bf16" 
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"} 
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
@@ -46,11 +46,11 @@ envsubst_py=$(echo "`pwd`" |awk -F 'launcher_scripts' '{print $1"/launcher_scrip
 JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
 GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
 RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
-CMD="cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-DeepSpeed/llm && \
+CMD="cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-DeepSpeed/llm/gpt3 && \
     DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
     RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
     ENABLE_CKPT=${ENABLE_CKPT} \
-    bash run_ds_${MODEL}.sh" \
-python3 $envsubst_py -i pytorchjob-nemo.yaml.template -o pytorchjob-nemo.yaml
+    bash run_${MODEL}.sh" \
+python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
 
-kubectl apply -f pytorchjob-nemo.yaml
+kubectl apply -f pytorchjob.yaml

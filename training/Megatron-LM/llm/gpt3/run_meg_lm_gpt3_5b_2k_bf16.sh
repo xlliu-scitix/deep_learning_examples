@@ -117,16 +117,18 @@ MODEL_PARALLEL_ARGS=(
     --pipeline-model-parallel-size $PP 
 )
 
-DATA_ARGS=(
-    --data-path $DATA_PATH 
-    --vocab-file $VOCAB_FILE 
-    --merge-file $MERGE_FILE 
-    --split 949,50,1
-)
-
 if [ -n "$MOCK_DATA" ]; then
-    DATA_ARGS+=(
+    DATA_ARGS=(
         --mock-data
+       --vocab-size 8192
+       --tokenizer-type NullTokenizer
+    )
+else
+    DATA_ARGS=(
+        --data-path $DATA_PATH 
+        --vocab-file $VOCAB_FILE 
+        --merge-file $MERGE_FILE 
+        --split 949,50,1
     )
 fi
 

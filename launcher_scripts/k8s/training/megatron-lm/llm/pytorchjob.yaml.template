@@ -17,7 +17,7 @@ spec:
         spec: &job-spec
           containers:
           - args:
-            - "export NODE_RANK=$RANK && unset RANK && ${CMD}"
+            - "sleep inf && export NODE_RANK=$RANK && unset RANK && ${CMD}"
             command:
             - /usr/bin/env
             - bash
@@ -54,33 +54,28 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /workspace/deep_learning_examples
-              name: data
-            - mountPath: /models/preset
-              name: models
-            - mountPath: /datasets/preset
-              name: datasets
+            # - mountPath: /workspace/deep_learning_examples
+            #   name: data
+            # - mountPath: /models/preset
+            #   name: models
+            # - mountPath: /datasets/preset
+            #   name: datasets
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
-          - hostPath:
-              path: /data/scitix/deep_learning_examples
-              type: "DirectoryOrCreate"
-            name: data
-          - hostPath:
-              path: /data/scitix/models/preset
-              type: "DirectoryOrCreate"
-            name: models
-          - hostPath:
-              path: /data/scitix/datasets/preset
-              type: "DirectoryOrCreate"
-            name: datasets
-          tolerations:
-            - effect: NoSchedule
-              key: node.kubernetes.io/unschedulable
-              operator: Exists
-          affinity:
+          # - hostPath:
+          #     path: /data/scitix/deep_learning_examples
+          #     type: "DirectoryOrCreate"
+          #   name: data
+          # - hostPath:
+          #     path: /data/scitix/models/preset
+          #     type: "DirectoryOrCreate"
+          #   name: models
+          # - hostPath:
+          #     path: /data/scitix/datasets/preset
+          #     type: "DirectoryOrCreate"
+          #   name: datasets          affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
                 nodeSelectorTerms:
