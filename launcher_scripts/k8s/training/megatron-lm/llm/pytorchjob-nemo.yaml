@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-${RUN_ID}
+  name: mega-lm-gpt3-175b-n32
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -16,14 +16,9 @@ spec:
           containers:
           - args:
             - "sleep 1 && export NODE_RANK=$RANK &&  unset RANK && export CUDA_DEVICE_MAX_CONNECTIONS=1 && \
-               cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva && export PATH=$PATH:${DEEP_LEARNING_EXAMPLES_DIR}/bin && \
-               DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-               PRETRAINED_LLM_PATH=${PRETRAINED_LLM_PATH} \
-	       PRETRAINED_VISION_ENCODER_PATH=${PRETRAINED_VISION_ENCODER_PATH} \
-	       DATASET_DIR=${DATASET_DIR} \
-               RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
-               ENABLE_CKPT=${ENABLE_CKPT} \
-               bash run_nemo_${MODEL}.sh"
+               cd /workspace/deep_learning_examples/training/Megatron-LM && \ 
+               GBS=128 GPT3_MODEL_SIZE=175b LOG_INTERVAL=1 bash gpt3.sh"
+               #bash examples/gpt3/train_gpt3_175b_distributed.sh"
             command:
             - /usr/bin/env
             - bash
@@ -51,7 +46,7 @@ spec:
               value: "3"
             - name: NCCL_IB_TIMEOUT
               value: "22"
-            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07
+            image: registry-ap-southeast.scitix.ai/hpc/ngc_pytorch:24.03-sicl
             imagePullPolicy: Always 
             name: pytorch
             resources:
@@ -78,8 +73,6 @@ spec:
               name: models
             - mountPath: /datasets/preset
               name: datasets
-            - mountPath: /tmp
-              name: tmp 
           volumes:
           - emptyDir:
               medium: Memory
@@ -96,10 +89,6 @@ spec:
               path: /data/scitix/datasets/preset
               type: ""
             name: datasets
-          - hostPath:
-              path: /data/scitix/tmp
-              type: ""
-            name: tmp
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -110,7 +99,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: $WORKER_NUMS
+      replicas: 3
       restartPolicy: Never
       template:
         metadata:

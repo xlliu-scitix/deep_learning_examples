@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-${RUN_ID}
+  name: neva-llama2-13b-chat-bf16-n32-gbs256-0913t113521
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -16,14 +16,14 @@ spec:
           containers:
           - args:
             - "sleep 1 && export NODE_RANK=$RANK &&  unset RANK && export CUDA_DEVICE_MAX_CONNECTIONS=1 && \
-               cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva && export PATH=$PATH:${DEEP_LEARNING_EXAMPLES_DIR}/bin && \
-               DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-               PRETRAINED_LLM_PATH=${PRETRAINED_LLM_PATH} \
-	       PRETRAINED_VISION_ENCODER_PATH=${PRETRAINED_VISION_ENCODER_PATH} \
-	       DATASET_DIR=${DATASET_DIR} \
-               RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
-               ENABLE_CKPT=${ENABLE_CKPT} \
-               bash run_nemo_${MODEL}.sh"
+               cd /workspace/deep_learning_examples/training/nemo/neva && export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/workspace/deep_learning_examples/bin && \
+               DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples BASE_RESULTS_DIR=/workspace/deep_learning_examples/results \
+               PRETRAINED_LLM_PATH=/models/preset/scitix/hf-to-nemo/Llama-2-13b-chat/ \
+	       PRETRAINED_VISION_ENCODER_PATH=/models/preset/openai/clip-vit-large-patch14-336/ \
+	       DATASET_DIR=/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K/ \
+               RUN_ID=0913t113521 GBS=256 MBS=32 PP=1 TP=8 MAX_STEPS=2170 \
+               ENABLE_CKPT=0 \
+               bash run_nemo_neva_llama2_13b_chat_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -110,7 +110,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: $WORKER_NUMS
+      replicas: 3
       restartPolicy: Never
       template:
         metadata:

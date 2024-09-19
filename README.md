@@ -6,13 +6,13 @@ This repository contains example scripts for deep learning, including pretrainin
 
 ### LLM Pretraining
 
-- **[training/nemo/llm/h100](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/h100)**  
+- **[training/nemo/llm](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm)**  
   Scripts for LLM pretraining (e.g., GPT-3, LLaMA2, LLaMA3, NeMoTron) with recommended config (from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher)) on NVIDIA H100, in fp16 data type, running on NeMo Framework
-  - [llama2_13b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/h100/llama2_13b_bf16)
-  - [llama2_70b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/h100/llama2_70b_bf16)
-  - [llama3_1_70b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/h100/llama3_1_70b_bf16)
-  - [gpt3_175b_2k_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/h100/gpt3_175b_2k_bf16)
-  - [nemotron_340b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/h100/nemotron_340b_bf16)
+  - [llama2_13b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/llama2_13b_bf16)
+  - [llama2_70b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/llama2_70b_bf16)
+  - [llama3_1_70b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/llama3_1_70b_bf16)
+  - [gpt3_175b_2k_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/gpt3_175b_2k_bf16)
+  - [nemotron_340b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/nemotron_340b_bf16)
 
 ### Multimodal Models
 

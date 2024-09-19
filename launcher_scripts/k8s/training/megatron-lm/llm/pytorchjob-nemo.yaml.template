@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-${RUN_ID}
+  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-ckpt${ENABLE_CKPT}-${RUN_ID}
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -12,17 +12,17 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
+          labels:
+            scitix.ai/topo-aware-in-node: "true"
         spec: &job-spec
           containers:
           - args:
-            - "sleep 1 && export NODE_RANK=$RANK &&  unset RANK && export CUDA_DEVICE_MAX_CONNECTIONS=1 && \
-               cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva && export PATH=$PATH:${DEEP_LEARNING_EXAMPLES_DIR}/bin && \
+            - "sleep 1 && echo $NODE_NAME && export NODE_RANK=$RANK &&  unset RANK && \
+               export CUDA_DEVICE_MAX_CONNECTIONS=1 && export PATH=$PATH:${DEEP_LEARNING_EXAMPLES_DIR}/bin && \
+               cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${GPU_TYPE}/${MODEL} && \
                DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-               PRETRAINED_LLM_PATH=${PRETRAINED_LLM_PATH} \
-	       PRETRAINED_VISION_ENCODER_PATH=${PRETRAINED_VISION_ENCODER_PATH} \
-	       DATASET_DIR=${DATASET_DIR} \
-               RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
-               ENABLE_CKPT=${ENABLE_CKPT} \
+               RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP CP=$CP MAX_STEPS=${MAX_STEPS} \
+               ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
                bash run_nemo_${MODEL}.sh"
             command:
             - /usr/bin/env
@@ -51,7 +51,7 @@ spec:
               value: "3"
             - name: NCCL_IB_TIMEOUT
               value: "22"
-            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07
+            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.05.llama3.1-scitix
             imagePullPolicy: Always 
             name: pytorch
             resources:
@@ -78,8 +78,6 @@ spec:
               name: models
             - mountPath: /datasets/preset
               name: datasets
-            - mountPath: /tmp
-              name: tmp 
           volumes:
           - emptyDir:
               medium: Memory
@@ -96,10 +94,10 @@ spec:
               path: /data/scitix/datasets/preset
               type: ""
             name: datasets
-          - hostPath:
-              path: /data/scitix/tmp
-              type: ""
-            name: tmp
+          tolerations:
+            - effect: NoSchedule
+              key: node.kubernetes.io/unschedulable
+              operator: Exists
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:

@@ -35,7 +35,7 @@ MBS=${MBS:-1}
 MAX_STEPS=${MAX_STEPS:-128}
 
 # setup experiment result dir
-MODEL_DIR=${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/h100/${MODEL}
+MODEL_DIR=${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${MODEL}
 CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
 RUN_ID=${RUN_ID:-${CURR_TIME}}
 RESULTS_DIR=${BASE_RESULTS_DIR}/${MODEL}/tp${TP}_pp${PP}_n$((WORLD_SIZE * 8))_gbs${GBS}_mbs${MBS}_${RUN_ID}

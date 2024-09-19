@@ -10,10 +10,8 @@ export NCCL_NVLS_ENABLE=0
 export NVTE_DP_AMAX_REDUCE_INTERVAL=0
 export NVTE_ASYNC_AMAX_REDUCTION=1
 export NVTE_FUSED_ATTN=0
-export UCX_ALLOC=md,mmap,heap
-export UCX_MM_HUGETLB_MODE=n
-export NCCL_IB_QPS_PER_CONNECTION=2
-export NCCL_NET_GDR_LEVEL=3
+# export NCCL_IB_QPS_PER_CONNECTION=2
+# export NCCL_NET_GDR_LEVEL=3
 export NODE_RANK=${RANK:-0}
 unset RANK
 
@@ -37,7 +35,7 @@ MBS=${MBS:-1}
 MAX_STEPS=${MAX_STEPS:-128}
 
 # setup experiment result dir
-MODEL_DIR=${MODEL_DIR:-"${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/h100/${MODEL}"}
+MODEL_DIR=${MODEL_DIR:-"${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${MODEL}"}
 CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
 RUN_ID=${RUN_ID:-${CURR_TIME}}
 RESULTS_DIR=${BASE_RESULTS_DIR}/${MODEL}/tp${TP}_pp${PP}_cp${CP}_n$((WORLD_SIZE * 8))_gbs${GBS}_mbs${MBS}_${RUN_ID}

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -x
-GPU_NUMS=${GPU_NUMS:-128}
+GPU_NUMS=${GPU_NUMS:-32}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
     WORLD_SIZE=1
@@ -14,20 +14,45 @@ MODEL="gpt3_175b_2k_bf16"
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"} 
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
-DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} \
-BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-TP=${TP:-4} \
-PP=${PP:-8} \
-CP=${CP:-1} \
-SEQ_LEN=2048 \
-GBS=${GBS:-2048} \
-MBS=${MBS:-1} \
-MAX_STEPS=${MAX_STEPS:-128} \
+TP=${TP:-4}
+PP=${PP:-8}
+CP=${CP:-1}
+SEQ_LEN=2048
+GBS=${GBS:-2048}
+MBS=${MBS:-1}
+# Check if the world_size is divisable by TP * PP
+global_world_size=$((WORLD_SIZE * 8))
+divisor=$((TP * PP))
+if (( global_world_size % divisor != 0 )); then
+        echo "global_world_size ${global_world_size} is not divisible by TP ${TP} * PP ${PP}"
+        exit 1
+fi
+
+# Check if the GBS is divisable by MBS * DP
+DP=$((global_world_size / divisor))
+divisor=$((DP * MBS))
+if (( GBS % divisor != 0 )); then
+        echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP})"
+        coefficient=$((GBS / divisor + 1))
+        GBS=$((coefficient * divisor))
+        echo "Set GBS=${GBS}"
+fi
+
+MAX_STEPS=${MAX_STEPS:-128}
+ENABLE_CKPT=${ENABLE_CKPT:-0}
+UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-0}
+RUN_ID=$(date +"%m%dt%H%M%S")
+
+envsubst_py=$(echo "`pwd`" |awk -F 'launcher_scripts' '{print $1"/launcher_scripts/envsubst.py"}')
+
 JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
-MODEL=${MODEL} \
-RUN_ID=$(date +"%m%dt%H%M%S") \
-ENABLE_CKPT=${ENABLE_CKPT:-0} \
-UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-0} \
-GPU_TYPE=${GPU_TYPE:-h100} \
-WORLD_SIZE=$WORLD_SIZE RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} \
-        envsubst < pytorchjob-nemo.yaml.template |kubectl apply -f -
+GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
+RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
+CMD="cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${MODEL} && \
+    DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
+    RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP CP=$CP MAX_STEPS=${MAX_STEPS} \
+    ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
+    bash run_nemo_${MODEL}.sh"
+python3 $envsubst_py -i pytorchjob-nemo.yaml.template -o pytorchjob-nemo.yaml
+
+kubectl apply -f pytorchjob-nemo.yaml
