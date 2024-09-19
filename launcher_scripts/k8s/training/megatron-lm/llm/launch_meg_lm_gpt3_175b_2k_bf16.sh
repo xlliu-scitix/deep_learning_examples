@@ -39,6 +39,7 @@ fi
 
 MAX_STEPS=${MAX_STEPS:-128}
 ENABLE_CKPT=${ENABLE_CKPT:-0}
+MOCK_DATA=${MOCK_DATA:-true}
 RUN_ID=$(date +"%m%dt%H%M%S")
 
 envsubst_py=$(echo "`pwd`" |awk -F 'launcher_scripts' '{print $1"/launcher_scripts/envsubst.py"}')
