@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-${RUN_ID}
+  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-ckpt${ENABLE_CKPT}-${RUN_ID}
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -12,6 +12,8 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
+          labels:
+            scitix.ai/topo-aware-in-node: "true"
         spec: &job-spec
           containers:
           - args:
@@ -52,8 +54,6 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /tmp
-              name: tmp
             - mountPath: /workspace/deep_learning_examples
               name: data
             - mountPath: /models/preset
@@ -65,10 +65,6 @@ spec:
               medium: Memory
             name: dev-shm
           - hostPath:
-              path: /data/scitix/tmp
-              type: ""
-            name: tmp
-          - hostPath:
               path: /data/scitix/deep_learning_examples
               type: "DirectoryOrCreate"
             name: data
@@ -79,7 +75,7 @@ spec:
           - hostPath:
               path: /data/scitix/datasets/preset
               type: "DirectoryOrCreate"
-            name: datasets
+            name: datasets         
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:

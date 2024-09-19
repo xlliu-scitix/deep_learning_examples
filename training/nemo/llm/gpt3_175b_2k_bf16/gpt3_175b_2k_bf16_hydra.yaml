@@ -19,7 +19,7 @@ trainer:
   max_steps: ${MAX_STEPS}
   max_time: "6:11:00:00" # days:hours:minutes:seconds
   log_every_n_steps: 10
-  val_check_interval: 2000
+  val_check_interval: 200
   limit_val_batches: 0
   limit_test_batches: 50
   accumulate_grad_batches: 1
@@ -35,7 +35,7 @@ exp_manager:
     name: ${run.name}
   resume_if_exists: True
   resume_ignore_no_checkpoint: true
-  create_checkpoint_callback: ${ENABLE_CKPT}
+  create_checkpoint_callback: False
   checkpoint_callback_params:
     monitor: val_loss
     save_top_k: 5
@@ -197,4 +197,4 @@ model:
 data_dir: ''
 cluster_type: k8s
 #launcher_scripts_path: /home/xlliu/NeMo-Framework-Launcher/launcher_scripts
-data_config: gpt3_175b_16k_bf16
+data_config: gpt3_175b_2k_bf16

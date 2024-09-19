@@ -2,7 +2,7 @@
 
 set -x
 
-# setup
+# setup env
 export NCCL_IB_TIMEOUT=22
 export TRANSFORMERS_OFFLINE=0
 export TORCH_NCCL_AVOID_RECORD_STREAMS=1
@@ -10,8 +10,6 @@ export NCCL_NVLS_ENABLE=0
 export NVTE_DP_AMAX_REDUCE_INTERVAL=0
 export NVTE_ASYNC_AMAX_REDUCTION=1
 export NVTE_FUSED_ATTN=0
-export UCX_ALLOC=md,mmap,heap
-export UCX_MM_HUGETLB_MODE=n
 export NCCL_IB_QPS_PER_CONNECTION=2
 export NCCL_NET_GDR_LEVEL=3
 export NODE_RANK=${RANK:-0}
@@ -20,7 +18,7 @@ UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-False}
 export TOKENIZERS_PARALLELISM=${UB_TP_COMM_OVERLAP}
 
 # setup workspace dir and base result dir
-MODEL="llama3_1_70b_bf16"
+MODEL="llama2_70b_bf16"
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-/workspace/deep_learning_examples}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
@@ -28,29 +26,29 @@ BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 WORLD_SIZE=${WORLD_SIZE:-4}
 TP=${TP:-4}
 PP=${PP:-4}
-VPP=${VPP:-10}
-CP=${CP:-2}
+VPP=${VPP:-5}
+SEQ_LEN=4096
 GBS=${GBS:-2048}
 MBS=${MBS:-1}
 MAX_STEPS=${MAX_STEPS:-128}
 
 # setup experiment result dir
-MODEL_DIR=${MODEL_DIR:-"${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/h100/${MODEL}"}
-CURR_TIME=$(date +"%m%dT%H%") # not %H%M as the start times of different workers may vary by several minutes
+MODEL_DIR=${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${MODEL}
+CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
 RUN_ID=${RUN_ID:-${CURR_TIME}}
-RESULTS_DIR=${BASE_RESULTS_DIR}/${MODEL}/tp${TP}_pp${PP}_cp${CP}_n$((WORLD_SIZE * 8))_gbs${GBS}_mbs${MBS}_${RUN_ID}
+RESULTS_DIR=${BASE_RESULTS_DIR}/${MODEL}/tp${TP}_pp${PP}_n$((WORLD_SIZE * 8))_gbs${GBS}_mbs${MBS}_${RUN_ID}
 
-# Check if the world_size is divisable by TP * PP * CP
+# Check if the world_size is divisable by TP * PP
 global_world_size=$((WORLD_SIZE * 8))
-divisor=$((TP * PP * CP))
+divisor=$((TP * PP))
 if (( global_world_size % divisor != 0 )); then
 	echo "global_world_size ${global_world_size} is not divisible by TP ${TP} * PP ${PP} * CP ${CP}"
 	exit 1
 fi
 
-# Check if the GBS is divisable by MBS * DP * PP
-dp=$((global_world_size / divisor))
-divisor=$((dp * MBS * PP))
+# Check if the GBS is divisable by MBS * DP
+DP=$((global_world_size / divisor))
+divisor=$((DP * MBS))
 if (( GBS % divisor != 0 )); then
 	echo "global batch size ${GBS} is not divisible by micro batch size (${MBS}) times data parallel size (${DP})"
 	exit 1
@@ -58,13 +56,16 @@ fi
 
 # generate the config file.
 # If there is no NFS, generate the config file on each rank. Otherwise, generate the config file on rank 0.
+SCRIPT_DIR=$(realpath $(dirname $0)) # Get the directory of the current script
+envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 NFS=${NFS:-True}
 if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
         mkdir -p ${RESULTS_DIR}
         ENABLE_CKPT=${ENABLE_CKPT:-False} \
 	UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
-        WORLD_SIZE=$WORLD_SIZE GBS=$GBS MBS=$MBS PP=$PP VPP=$VPP TP=$TP CP=$CP MAX_STEPS=$MAX_STEPS RESULTS_DIR=${RESULTS_DIR} \
-                envsubst < ${MODEL_DIR}/${MODEL}_hydra.yaml  > ${RESULTS_DIR}/${MODEL}_hydra.yaml
+        TOKENIZER_MODEL=${DEEP_LEARNING_EXAMPLES_DIR}/data/tokenizer.model \
+        WORLD_SIZE=$WORLD_SIZE GBS=$GBS MBS=$MBS PP=$PP VPP=$VPP TP=$TP MAX_STEPS=$MAX_STEPS RESULTS_DIR=${RESULTS_DIR} \
+                python3 $envsubst_py -i ${MODEL_DIR}/${MODEL}_hydra.yaml -o ${RESULTS_DIR}/${MODEL}_hydra.yaml
 else
         while [ ! -f "${RESULTS_DIR}/${MODEL}_hydra.yaml" ]; do
                 echo "${RESULTS_DIR}/${MODEL}_hydra.yaml not exist, waiting..."

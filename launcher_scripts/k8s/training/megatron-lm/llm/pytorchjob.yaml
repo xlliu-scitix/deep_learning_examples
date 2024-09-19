@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-n${GPU_NUMS}-gbs${GBS}-${RUN_ID}
+  name: meg-lm-gpt3-175b-2k-bf16-n32-gbs128-ckpt0-0919t045447
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -12,10 +12,12 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
+          labels:
+            scitix.ai/topo-aware-in-node: "true"
         spec: &job-spec
           containers:
           - args:
-            - "export NODE_RANK=$RANK && unset RANK && ${CMD}"
+            - "export NODE_RANK=$RANK && unset RANK && DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples BASE_RESULTS_DIR=/workspace/deep_learning_examples/results     RUN_ID=0919t045447 GBS=128 MBS=1 PP=8 TP=4 MAX_STEPS=128     ENABLE_CKPT=0 MOCK_DATA=false     bash /workspace/deep_learning_examples/training/Megatron-LM/llm/gpt3/run_meg_lm_gpt3_175b_2k_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -52,8 +54,6 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /tmp
-              name: tmp
             - mountPath: /workspace/deep_learning_examples
               name: data
             - mountPath: /models/preset
@@ -65,10 +65,6 @@ spec:
               medium: Memory
             name: dev-shm
           - hostPath:
-              path: /data/scitix/tmp
-              type: ""
-            name: tmp
-          - hostPath:
               path: /data/scitix/deep_learning_examples
               type: "DirectoryOrCreate"
             name: data
@@ -79,7 +75,7 @@ spec:
           - hostPath:
               path: /data/scitix/datasets/preset
               type: "DirectoryOrCreate"
-            name: datasets
+            name: datasets         
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -90,7 +86,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: $WORKER_NUMS
+      replicas: 3
       restartPolicy: Never
       template:
         metadata:
