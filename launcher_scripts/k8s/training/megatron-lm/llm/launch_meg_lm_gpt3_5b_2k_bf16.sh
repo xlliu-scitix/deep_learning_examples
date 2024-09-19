@@ -50,7 +50,7 @@ RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
 CMD="cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-LM/llm/gpt3 && \
     DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
     RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
-    ENABLE_CKPT=${ENABLE_CKPT} \
+    ENABLE_CKPT=${ENABLE_CKPT} MOCK_DATA=${MOCK_DATA} \
     bash run_${MODEL}.sh" \
 python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
 
