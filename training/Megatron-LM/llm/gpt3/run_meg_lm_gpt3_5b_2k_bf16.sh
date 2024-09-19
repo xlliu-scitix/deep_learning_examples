@@ -117,7 +117,7 @@ MODEL_PARALLEL_ARGS=(
     --pipeline-model-parallel-size $PP 
 )
 
-if [ -n "$MOCK_DATA" ]; then
+if [[ $(echo "$MOCK_DATA" |tr '[:upper:]' '[:lower:]') == "true" ||  $MOCK_DATA -eq 1 ]]; then
     DATA_ARGS=(
         --mock-data
         --vocab-size 8192
