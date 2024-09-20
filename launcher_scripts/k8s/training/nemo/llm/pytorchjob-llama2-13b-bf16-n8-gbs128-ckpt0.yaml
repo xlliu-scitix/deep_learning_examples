@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: meg-lm-gpt3-175b-2k-bf16-n64-gbs2048-ckpt0-0919t1456
+  name: llama2-13b-bf16-n8-gbs128-ckpt0
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -17,7 +17,9 @@ spec:
         spec: &job-spec
           containers:
           - args:
-            - "export NODE_RANK=$RANK && unset RANK && DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples BASE_RESULTS_DIR=/workspace/deep_learning_examples/results     RUN_ID=0919t1456 GBS=2048 MBS=1 PP=8 TP=8 MAX_STEPS=128     ENABLE_CKPT=0 MOCK_DATA=true DATA_DIR=/datasets/preset/bigscience/oscar-en     bash /workspace/deep_learning_examples/training/Megatron-LM/llm/gpt3/run_meg_lm_gpt3_175b_2k_bf16.sh"
+            - "export NODE_RANK=$RANK && unset RANK && \
+            DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
+            bash /workspace/deep_learning_examples/training/nemo/llm/llama2_13b_bf16/run_nemo_llama2_13b_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -75,7 +77,7 @@ spec:
           - hostPath:
               path: /data/scitix/datasets/preset
               type: "DirectoryOrCreate"
-            name: datasets         
+            name: datasets
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -86,7 +88,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: 7
+      replicas: 0
       restartPolicy: Never
       template:
         metadata:

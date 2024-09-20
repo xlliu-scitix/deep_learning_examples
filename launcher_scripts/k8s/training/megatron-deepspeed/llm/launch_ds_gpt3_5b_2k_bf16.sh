@@ -12,6 +12,7 @@ fi
 
 MODEL="ds_gpt3_5b_2k_bf16" 
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"} 
+DATA_DIR=${DATA_DIR:-/datasets/preset/bigscience/oscar-en}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
 TP=${TP:-1}
@@ -50,7 +51,7 @@ GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
 RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
 CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
     RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
-    ENABLE_CKPT=${ENABLE_CKPT} \
+    ENABLE_CKPT=${ENABLE_CKPT} DATA_DIR=${DATA_DIR} \
     bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-DeepSpeed/llm/gpt3/run_${MODEL}.sh" \
 python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
 

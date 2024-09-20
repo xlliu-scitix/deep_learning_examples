@@ -60,6 +60,6 @@ CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=$
     RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
     ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
     bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva/run_nemo_${MODEL}.sh" \
-python3 $envsubst_py -i pytorchjob-nemo.yaml.template -o pytorchjob-nemo.yaml
+python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
 
-kubectl apply -f pytorchjob-nemo.yaml
+kubectl apply -f pytorchjob.yaml
