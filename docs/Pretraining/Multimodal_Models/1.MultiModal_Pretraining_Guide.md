@@ -1,0 +1,115 @@
+# Prerequisites
+## [deep_learning_examples](https://github.com/sallylxl/deep_learning_examples) script
+Throughout the rest of this document, referenced files may be found in [deep_learning_example repo](https://github.com/sallylxl/deep_learning_examples).
+
+### Key Folders
+
+-  **[NeVa Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/neva)**  :
+   Contains example scripts for pretraining NeVa Models using the [NeMo Framework](https://docs.nvidia.com/nemo-framework/user-guide/latest/multimodalmodels/multimodallanguagemodel/neva/index.html). Adapted from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher/tree/main).
+
+-  **[Kubernetes Launcher Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/launcher_scripts/k8s/training)**  :
+   Includes [Pytorchjob](https://github.com/kubeflow/pytorch-operator) YAML files for Kubernetes resources and launcher scripts. Key specs of Pytorchjob YAML include:
+
+     + Within this resource definition, there are two important `specs`: the `master` and the `worker`. the `master` and `worker` containers all run the same script using the same arguments. Both containers take the resources of an entire node, which includes 8 GPUs.
+     + The PyTorch Job will also set up all the environment variables that are needed by `torchrun` and `dist` to set up distributed training, excluding `NODE_RANK`, which should be set using `RANK`. `MASTER_ADDR` and `MASTER_PORT` will point at the pod defined by the master spec.
+
+## Data Preparation
+### Prepare Dataset
+For pretraining, use the LAION/CC/SBU BLIP-Caption Concept-balanced 558K dataset. You can obtain this from ScitiX preset datasets or download the image data from [HuggingFace](https://huggingface.co/datasets/liuhaotian/LLaVA-Pretrain). 
+
++ **From HuggingFace**:  
+  Download from [liuhaotian/LLaVA-Pretrain](https://huggingface.co/datasets/liuhaotian/LLaVA-Pretrain). Extract to::
+
+```plain
+${data_dir}/liuhaotian/LLaVA-Pretrain-LCS-558K/blip_laion_cc_sbu_558k.json
+${data_dir}/liuhaotian/LLaVA-Pretrain-LCS-558K/images
+```
+
++ **ScitiX preset datasets**: Available at `/data/scitix/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K` in CKS share GPFS storage
+
+### Prepare Foundation LLM Checkpoints
+ The NeVa model integrates large language models (like Llama2) with a vision encoder (like Clip). Example models are available at `/data/scitix/models/preset` in CKS share GPFS storage. For example:
+
++ `/data/scitix/models/preset/hf-to-nemo/Llama-2-7b-chat`
++ `/data/scitix/models/preset/hf-to-nemo/Llama-2-13b-chat`
++ `/data/scitix/models/preset/openai/clip-vit-large-patch14-336`
+
+For additional LLM checkpoints, refer to [NVIDIA documentation](https://docs.nvidia.com/nemo-framework/user-guide/latest/multimodalmodels/multimodallanguagemodel/neva/dataprep.html).
+
+## Docker Image
+Use either:
+- ScitiX NeMo container: `registry-ap-southeast.scitix.ai/hpc/nemo:24.07`)=
+- the NGC NeMo container: `nemo:24.07`. If using NGC, clone this repository into the container or a shared storage accessible by distributed worker containers
+
+# NeMo NeVa Pretraining Guide
+## NeVa Pretraining Scripts
+### NeVa Pretraining Python Script
+The NeVa pretraining python script is based Megatron-Core and adapted from the NeMo library [neva_pretraining.py](https://github.com/NVIDIA/NeMo/blob/main/examples/multimodal/multimodal_llm/neva/neva_pretrain.py). 
+
+The script is available at container path `/opt/NeMo/examples/multimodal/multimodal_llm/neva/neva_pretrain.py`
+
+### NeVa Model Configurations
+Recommended configuration for NVIDIA H100 GPUs using bf16 data type is available at [`${DEEP_LEARNING_EXAMPLES_DIR}/training/llm/nemo/neva/neva_llama2_7b_chat_bf16_hydra.yaml`](https://github.com/sallylxl/deep_learning_examples/blob/master/training/nemo/neva/neva_llama2_7b_chat_bf16_hydra.yaml).
+
+### NeVa Pretraining Shell Script
+The NeVa training Lancher shell script runs the above python script with following training parameters default (for `neva_llama2_7b_chat_bf16` model):
+
++ The number of gradient accumulation microsteps is 256, with micro batch size of 32.
++ The tensor parallelism degree is 4.
++ The pipeline parallel degree is 1.
+
+The running script is available at [`${DEEP_LEARNING_EXAMPLES_DIR}/training/llm/nemo/neva/run_nemo_neva_llama2_7b_chat_bf16.sh`](https://github.com/sallylxl/deep_learning_examples/blob/master/training/nemo/neva/run_nemo_neva_llama2_7b_chat_bf16.sh)
+
+## Initiating a Training Job
+### One-Click Test
+Start a Training Job by applying the predefined `llama2-13b-bf16` PyTorchjob YAML:
+
+```bash
+kubectl apply -f ${DEEP_LEARNING_EXAMPLES_DIR}/launcher_scripts/k8s/training/nemo/llm/pytorchjob-llama2-13b-bf16-n8-gbs128-ckpt0.yaml
+```
+
+### Launch Job Using PyTorchjob Operator
+
+#### Job Lancher Shell Script
+The NeVa training Lancher shell script runs the above **NeVa Pretraining Shell Script** with following training parameters default (for `neva_llama2_7b_chat_bf16` model):
+
++ The number of gradient accumulation microsteps is 256, with micro batch size of 32.
++ The tensor parallelism degree is 4.
++ The pipeline parallel degree is 1.
++ The number of workers is 4, each worker takes the resources of an entire node, which includes 8 GPUs.
+
+The launch script `launch_nemo_llama2_13b_bf16.sh` is available at: [${DEEP_LEARNING_EXAMPLES_DIR}/launcher_scripts/k8s/training/nemo/neva/launch_nemo_neva_llama2_7b_bf16.sh](https://github.com/sallylxl/deep_learning_examples/blob/master/launcher_scripts/k8s/training/nemo/neva/launch_nemo_neva_llama2_7b_bf16.sh).
+
+The `PyTorchJob` Kubernetes resource is defined in: [${DEEP_LEARNING_EXAMPLES_DIR}/launcher_scripts/k8s/training/nemo/neva/pytorchjob-nemo.yaml.template](https://github.com/sallylxl/deep_learning_examples/blob/master/launcher_scripts/k8s/training/nemo/neva/pytorchjob-nemo.yaml.template).
+
+#### Step-by-Step Guide
+
+1. **Update Variables**: Edit the example lancher script, taking `neva_llama2_7b_chat_bf16` pretraining for example. Modify the following variables in [launch_nemo_neva_llama2_7b_bf16.sh](https://github.com/sallylxl/deep_learning_examples/blob/master/launcher_scripts/k8s/training/nemo/neva/launch_nemo_neva_llama2_7b_bf16.sh):
+   + `DEEP_LEARNING_EXAMPLES_DIR`: Path to the repository (default: `/workspace/deep_learning_examples`).
+   + `BASE_RESULT_DIR`: Directory for experiment results (default: `$DEEP_LEARNING_EXAMPLES_DIR/results`).
+   + `PRETRAINED_LLM_PATH`: Path to LLM model checkpoints and tokenizer (default: Siflow preset model path - `/models/preset/scitix/hf-to-nemo/Llama-2-7b-chat`). Refer to the[Nemo Framework documentation](https://docs.nvidia.com/nemo-framework/user-guide/latest/multimodalmodels/multimodallanguagemodel/neva/dataprep.html)for preparing model checkpoints.
+   + `PRETRAINED_VISION_ENCODER_PATH`: Path or name of the pretrained vision model (default: Siflow preset model path - `/models/preset/openai/clip-vit-large-patch14-336`). It will be downloaded automatically or you can pre-download from [huggingface](https://huggingface.co/openai/clip-vit-large-patch14-336/tree/main)
+   + `DATASET_DIR`: Path to the pretraining dataset (default: Siflow preset model path - `/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K`). You can also download it from [huggingface](https://huggingface.co/datasets/liuhaotian/LLaVA-Pretrain/tree/main)
+   + `GPU_NUMS`: Number of GPUs used for distributed training.
+  
+2. **Lanuch Command**：
+
+```plain 
+cd ${DEEP_LEARNING_EXAMPLES_DIR}/launcher_scripts/k8s/training/nemo/neva
+./launch_nemo_neva_llama2_7b_bf16.sh
+```
+
+3. **Scaling Up**:
+   If you want to scale up the number of GPUs used for distributed training, all you would need to do is set the number of `GPU_NUMS`，for example：
+
+    ```plain
+    cd ${DEEP_LEARNING_EXAMPLES_DIR}/launcher_scripts/k8s/training/nemo/neva
+    GPU_NUMS=128 ./launch_nemo_neva_llama2_7b_bf16.sh
+    ```
+4. **Monitor Training**:
+
+    You can monitor the job's progress by `kubectl logs` checking the logs of the master pod. The outputs like below some lines showing throughput and loss statistics every log step.
+
+    ```plain
+    Epoch 0: :   2%|▏         | 54/2170 [00:31<20:44, reduced_train_loss=1.600, global_step=2169.0, consumed_samples=2.22e+6, train_step_timing in s=0.540]
+    ```
