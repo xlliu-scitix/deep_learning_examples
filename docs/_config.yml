@@ -2,7 +2,7 @@ title: Deep Learning Examples
 lang: en
 description: A Deep Learning scripts - easy to train and deploy with reproducible performance on enterprise-grade infrastructure.
 
-remote_theme: rundocs/jekyll-rtd-theme
+remote_theme: carlosperate/jekyll-theme-rtd
 
 readme_index:
   with_frontmatter: true
