@@ -10,13 +10,13 @@ else
     WORLD_SIZE=$((GPU_NUMS / 8))
 fi
 
-MODEL="meg_lm_gpt3_175b_2k_bf16" 
+MODEL="ds_llama2_70b_bf16" 
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"} 
 DATA_DIR=${DATA_DIR:-/datasets/preset/bigscience/oscar-en}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
-TP=${TP:-8}
-PP=${PP:-8}
+TP=${TP:-4}
+PP=${PP:-4}
 SEQ_LEN=2048
 GBS=${GBS:-128}
 MBS=${MBS:-1}
@@ -40,7 +40,6 @@ fi
 
 MAX_STEPS=${MAX_STEPS:-128}
 ENABLE_CKPT=${ENABLE_CKPT:-0}
-MOCK_DATA=${MOCK_DATA:-true}
 RUN_ID=$(date +"%m%dt%H%M")
 
 # Get the directory of the current script
@@ -50,10 +49,10 @@ envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/de
 JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
 GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
 RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
-CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
+CMD="sleep inf && DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
     RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
-    ENABLE_CKPT=${ENABLE_CKPT} MOCK_DATA=${MOCK_DATA} DATA_DIR=${DATA_DIR} \
-    bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-LM/llm/gpt3/run_${MODEL}.sh" \
+    ENABLE_CKPT=${ENABLE_CKPT} DATA_DIR=${DATA_DIR} \
+    bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-DeepSpeed/llm/gpt3/run_${MODEL}.sh" \
 python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
 
 kubectl apply -f pytorchjob.yaml

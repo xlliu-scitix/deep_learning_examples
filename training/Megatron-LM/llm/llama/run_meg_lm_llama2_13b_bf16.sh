@@ -5,9 +5,13 @@ set -ex
 # setup env
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NCCL_IB_TIMEOUT=22
-# export NCCL_NVLS_ENABLES=0
-# export NCCL_NET_GDR_LEVEL=2
-# export NCCL_IB_QPS_PER_CONNECTION=2
+export NCCL_NVLS_ENABLES=0
+export NCCL_NET_GDR_LEVEL=3
+export NCCL_IB_QPS_PER_CONNECTION=2
+if [ -n "$RANK" ];then
+  export NODE_RANK=${RANK} # pytorchjob will set RANK but NODE_RANK
+  unset RANK
+fi
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
@@ -17,41 +21,22 @@ VOCAB_FILE=${VOCAB_FILE:-${DATA_DIR}/gpt2-vocab.json}
 MERGE_FILE=${MERGE_FILE:-${DATA_DIR}/gpt2-merges.txt}
 DATA_PATH=${DATA_PATH:-${DATA_DIR}/meg-gpt2_text_document}
 
-# Runs the "175B" parameter model
-## GPT-3 models use 2K sequence length/context window
-SEQ_LENGTH=2048
-GPT3_MODEL_SIZE=${GPT3_MODEL_SIZE:-5b}
-case $GPT3_MODEL_SIZE in
-  5b)
-  # GPT-5B model architecture
-  HIDDEN_SIZE=4096
-  FFN_HIDDEN_SIZE=$((4*HIDDEN_SIZE))
-  NUM_LAYERS=24
-  NUM_ATTENTION_HEADS=32
-  LR=1.0e-4
-  MIN_LR=1.0e-5
-  INIT_STD=0.005
-  TP=${TP:-1}
-  PP=${PP:-1}
-  GBS=${GBS:-2048}
-  MBS=${MBS:-4}
-    ;;
-  175b)
-  # GPT-175B model architecture
-  HIDDEN_SIZE=12288
-  FFN_HIDDEN_SIZE=$((4*HIDDEN_SIZE))
-  NUM_LAYERS=96
-  NUM_ATTENTION_HEADS=96
-  LR=1.0e-4
-  MIN_LR=1.0e-6
-  INIT_STD=0.005
-  TP=${TP:-4}
-  PP=${PP:-8}
-  GBS=${GBS:-2048}
-  MBS=${MBS:-1}
-  ;;
-esac
-MODEL="meg_lm_gpt3_${GPT3_MODEL_SIZE}_2k_bf16"
+# Runs the "13B" parameter model
+## Llama2 models use 4K sequence length/context window
+SEQ_LENGTH=4096
+MODEL="meg_lm_llama2_13b_bf16"
+## Llama2-13B model architecture
+HIDDEN_SIZE=5120
+FFN_HIDDEN_SIZE=13824
+NUM_LAYERS=40
+NUM_ATTENTION_HEADS=40
+LR=3.0e-4
+MIN_LR=3.0e-5
+INIT_STD=0.01
+TP=${TP:-2}
+PP=${PP:-1}
+GBS=${GBS:-128} #2048
+MBS=${MBS:-1}
 
 # setup training parameters
 GPUS_PER_NODE=${GPUS_PER_NODE:-8}
@@ -65,8 +50,8 @@ MAX_STEPS=${MAX_STEPS:-128}
 EVAL_ITERS=${EVAL_ITERS:-10}
 ##set --save-interval to a very large number, effectively disabling saving ckpt for practical purposes
 ## same as EVAL_INTERVAL
-SAVE_INTERVAL=${SAVE_INTERVAL:-100000000}
-EVAL_INTERVAL=${EVAL_INTERVAL:-1000}
+SAVE_INTERVAL=${SAVE_INTERVAL:-100}
+EVAL_INTERVAL=${EVAL_INTERVAL:-100}
 LOG_INTERVAL=${LOG_INTERVAL:-10}
 
 # setup experiment result dir
@@ -96,12 +81,30 @@ DISTRIBUTED_ARGS=(
 #        --rdzv-endpoint= $MASTER_ADDR:$MASTER_PORT
 # )
 
+# Below configuration required for llama model as per llama paper
+# --no-query-key-layer-scaling \
+# --attention-dropout 0 \
+# --hidden-dropout 0 \
+# --use-rotary-position-embeddings \
+# --untie-embeddings-and-output-weights \
+# --swiglu \
+# --normalization rmsnorm \
+# --disable-bias-linear \
+######################################
+
 MODEL_ARGS=(
     --num-layers ${NUM_LAYERS} 
     --hidden-size ${HIDDEN_SIZE} 
     --num-attention-heads ${NUM_ATTENTION_HEADS} 
     --seq-length ${SEQ_LENGTH} 
-    --max-position-embeddings ${SEQ_LENGTH} 
+    --max-position-embeddings ${SEQ_LENGTH}
+    --attention-dropout 0
+    --hidden-dropout 0
+    --use-rotary-position-embeddings
+    --untie-embeddings-and-output-weights
+    --swiglu
+    --normalization RMSNorm 
+    --disable-bias-linear
 )
 
 TRAINING_ARGS=(
@@ -119,38 +122,35 @@ TRAINING_ARGS=(
     --min-lr ${MIN_LR}
     --lr-warmup-fraction .001
     --lr-decay-iters 430000
+    --sequence-parallel
     --use-flash-attn
     --use-distributed-optimizer
-    --distributed-backend nccl
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
-TRAINING_ARGS+=(
-    --save ${CHECKPOINT_PATH}
-    --load ${LOAD_CHECKPOINT_PATH}
-)
+  TRAINING_ARGS+=(
+      --save ${CHECKPOINT_PATH}
+      --load ${LOAD_CHECKPOINT_PATH}
+  )
 fi
 
 MODEL_PARALLEL_ARGS=(
     --tensor-model-parallel-size $TP
-    --pipeline-model-parallel-size $PP 
-)
-if [[ $GPT3_MODEL_SIZE == "175b" ]]; then
-    MODEL_PARALLEL_ARGS+=(
-        --sequence-parallel
-    )
-fi
-
-DATA_ARGS=(
-    --data-path $DATA_PATH 
-    --vocab-file $VOCAB_FILE 
-    --merge-file $MERGE_FILE 
-    --split 949,50,1
+    --pipeline-model-parallel-size $PP
 )
 
-if [ -n "$MOCK_DATA" ]; then
-    DATA_ARGS+=(
+if [[ $(echo "$MOCK_DATA" |tr '[:upper:]' '[:lower:]') == "true" ||  $MOCK_DATA -eq 1 ]]; then
+    DATA_ARGS=(
         --mock-data
+        --vocab-size 8192
+        --tokenizer-type NullTokenizer
+    )
+else
+    DATA_ARGS=(
+        --data-path $DATA_PATH 
+        --vocab-file $VOCAB_FILE 
+        --merge-file $MERGE_FILE 
+        --split 949,50,1
     )
 fi
 
@@ -158,14 +158,12 @@ EVAL_AND_LOGGING_ARGS=(
     --log-interval $LOG_INTERVAL
     --save-interval $SAVE_INTERVAL
     --eval-interval $EVAL_INTERVAL 
-    --save $CHECKPOINT_PATH 
-    --load $LOAD_CHECKPOINT_PATH 
     --eval-iters $EVAL_ITERS
     --tensorboard-dir $TENSORBOARD_LOGS_DIR
     --log-throughput
 )
 
-torchrun ${DISTRIBUTED_ARGS[@]} pretrain_gpt.py \
+torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
     ${MODEL_ARGS[@]} \
     ${TRAINING_ARGS[@]} \
     ${MODEL_PARALLEL_ARGS[@]} \

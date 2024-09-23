@@ -8,38 +8,42 @@ export NCCL_IB_TIMEOUT=22
 export NCCL_NVLS_ENABLES=0
 export NCCL_NET_GDR_LEVEL=3
 export NCCL_IB_QPS_PER_CONNECTION=2
+if [ -n "$RANK" ];then
+  export NODE_RANK=${RANK} # pytorchjob will set RANK but NODE_RANK
+  unset RANK
+fi
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
-DATA_DIR=${DATA_DIR:-/workspace/bigscience/oscar-en}
+DATA_DIR=${DATA_DIR:-/datasets/preset/bigscience/oscar-en}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 VOCAB_FILE=${VOCAB_FILE:-${DATA_DIR}/gpt2-vocab.json}
 MERGE_FILE=${MERGE_FILE:-${DATA_DIR}/gpt2-merges.txt}
 DATA_PATH=${DATA_PATH:-${DATA_DIR}/meg-gpt2_text_document}
 
-# Runs the "13B" parameter model
-## Llama2 models use 4K sequence length/context window
-SEQ_LENGTH=4096
-MODEL="meg_lm_llama2_13b_bf16"
-## Llama2-13B model architecture
-HIDDEN_SIZE=5120
-FFN_HIDDEN_SIZE=13824
-NUM_LAYERS=40
-NUM_ATTENTION_HEADS=40
+# Runs the "70B" parameter model
+## Llama2 models use 2K sequence length/context window
+SEQ_LENGTH=2048
+MODEL="meg_lm_llama2_70b_bf16"
+## Llama2-70B model architecture
+HIDDEN_SIZE=8192
+FFN_HIDDEN_SIZE=28672
+NUM_LAYERS=80
+NUM_ATTENTION_HEADS=64
 LR=3.0e-4
 MIN_LR=3.0e-5
 INIT_STD=0.01
-TP=${TP:-2}
-PP=${PP:-1}
-GBS=${GBS:-128} #2048
+TP=${TP:-4}
+PP=${PP:-4}
+GBS=${GBS:-128}
 MBS=${MBS:-1}
 
 # setup training parameters
 GPUS_PER_NODE=${GPUS_PER_NODE:-8}
 MASTER_ADDR=${MASTER_ADDR:-localhost}
 MASTER_PORT=${MASTER_PORT:-6000}
-NUM_NODES=${WORLD_SIZE:-1}
-NODE_RANK=${RANK:-0} # pytorchjob will set RANK but NODE_RANK
+NUM_NODES=${WORLD_SIZE:-4}
+NODE_RANK=${NODE_RANK:-0}
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
 MAX_STEPS=${MAX_STEPS:-128}
@@ -91,9 +95,11 @@ DISTRIBUTED_ARGS=(
 MODEL_ARGS=(
     --num-layers ${NUM_LAYERS} 
     --hidden-size ${HIDDEN_SIZE} 
-    --num-attention-heads ${NUM_ATTENTION_HEADS} 
+    --num-attention-heads ${NUM_ATTENTION_HEADS}
     --seq-length ${SEQ_LENGTH} 
     --max-position-embeddings ${SEQ_LENGTH}
+    --group-query-attention
+    --num-query-groups 8
     --attention-dropout 0
     --hidden-dropout 0
     --use-rotary-position-embeddings

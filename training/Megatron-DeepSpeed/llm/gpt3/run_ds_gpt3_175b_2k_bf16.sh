@@ -5,13 +5,17 @@ set -ex
 # setup env
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NCCL_IB_TIMEOUT=22
-#export NCCL_NVLS_ENABLES=0
-#export NCCL_NET_GDR_LEVEL=3
-#export NCCL_IB_QPS_PER_CONNECTION=2
+export NCCL_NVLS_ENABLES=0
+export NCCL_NET_GDR_LEVEL=3
+export NCCL_IB_QPS_PER_CONNECTION=2
+if [ -n "$RANK" ];then
+  export NODE_RANK=${RANK} # pytorchjob will set RANK but NODE_RANK
+  unset RANK
+fi
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
-DATA_DIR=${DATA_DIR:-/workspace/bigscience/oscar-en}
+DATA_DIR=${DATA_DIR:-/datasets/preset/bigscience/oscar-en}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 VOCAB_FILE=${VOCAB_FILE:-${DATA_DIR}/gpt2-vocab.json}
 MERGE_FILE=${MERGE_FILE:-${DATA_DIR}/gpt2-merges.txt}
@@ -32,7 +36,7 @@ INIT_STD=0.005
 TP=${TP:-16}
 PP=${PP:-8}
 SP=${SP:-1}
-GBS=${GBS:-2048}
+GBS=${GBS:-128}
 MBS=${MBS:-1}
 
 ZERO_STAGE=${ZERO_STAGE:-3}
@@ -42,7 +46,7 @@ GPUS_PER_NODE=${GPUS_PER_NODE:-8}
 MASTER_ADDR=${MASTER_ADDR:-localhost}
 MASTER_PORT=${MASTER_PORT:-6000}
 NUM_NODES=${WORLD_SIZE:-1}
-NODE_RANK=${RANK:-0} # pytorchjob will set RANK but NODE_RANK
+NODE_RANK=${NODE_RANK:-0}
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
 MAX_STEPS=${MAX_STEPS:-128}
@@ -109,7 +113,7 @@ if [ $ZERO_STAGE -gt 1 ]; then
   DEEPSPEED_ARGS=" --no-pipeline-parallel ${DEEPSPEED_ARGS}"
   PP=1
 fi
-#DEEPSPEED_ARGS=" --ds-sequence-parallel-size $SP ${DEEPSPEED_ARGS}"
+DEEPSPEED_ARGS=" --ds-sequence-parallel-size $SP ${DEEPSPEED_ARGS}"
 
 DISTRIBUTED_ARGS=(
     --nproc_per_node $GPUS_PER_NODE 

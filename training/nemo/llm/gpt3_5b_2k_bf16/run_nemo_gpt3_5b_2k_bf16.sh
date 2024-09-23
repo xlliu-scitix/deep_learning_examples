@@ -12,8 +12,10 @@ export NVTE_ASYNC_AMAX_REDUCTION=1
 export NVTE_FUSED_ATTN=0
 export NCCL_IB_QPS_PER_CONNECTION=2
 export NCCL_NET_GDR_LEVEL=3
-export NODE_RANK=${RANK:-0}
-unset RANK
+if [ -n "$RANK" ];then
+  export NODE_RANK=${RANK}
+  unset RANK
+fi
 
 # set params
 #UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-False}
@@ -30,7 +32,7 @@ TP=${TP:-1}
 PP=${PP:-1}
 VPP=null
 CP=1
-GBS=${GBS:-2048}
+GBS=${GBS:-128}
 MBS=${MBS:-4}
 MAX_STEPS=${MAX_STEPS:-128}
 

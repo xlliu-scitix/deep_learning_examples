@@ -10,14 +10,14 @@ else
     WORLD_SIZE=$((GPU_NUMS / 8))
 fi
 
-MODEL="meg_lm_gpt3_175b_2k_bf16" 
+MODEL="meg_lm_llama2_70b_bf16" 
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"} 
 DATA_DIR=${DATA_DIR:-/datasets/preset/bigscience/oscar-en}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
-TP=${TP:-8}
-PP=${PP:-8}
-SEQ_LEN=2048
+TP=${TP:-4}
+PP=${PP:-4}
+SEQ_LEN=4096
 GBS=${GBS:-128}
 MBS=${MBS:-1}
 # Check if the world_size is divisable by TP * PP

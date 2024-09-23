@@ -5,9 +5,13 @@ set -ex
 # setup env
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NCCL_IB_TIMEOUT=22
-# export NCCL_NVLS_ENABLES=0
+export NCCL_NVLS_ENABLES=0
 export NCCL_NET_GDR_LEVEL=3
 export NCCL_IB_QPS_PER_CONNECTION=2
+if [ -n "$RANK" ];then
+  export NODE_RANK=${RANK} # pytorchjob will set RANK but NODE_RANK
+  unset RANK
+fi
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
