@@ -18,7 +18,7 @@ BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 TP=${TP:-8}
 PP=${PP:-8}
 SEQ_LEN=2048
-GBS=${GBS:-128}
+GBS=${GBS:-$((128*WORLD_SIZE))}
 MBS=${MBS:-1}
 # Check if the world_size is divisable by TP * PP
 global_world_size=$((WORLD_SIZE * 8))
