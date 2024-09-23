@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: llama2-13b-bf16-n8-gbs128-ckpt0
+  name: gpt3-175b-2k-bf16-tp4-pp8-gbs2048-ckpt0-n128
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -18,8 +18,12 @@ spec:
           containers:
           - args:
             - "export NODE_RANK=$RANK && unset RANK && \
-            DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
-            bash /workspace/deep_learning_examples/training/nemo/llm/llama2_13b_bf16/run_nemo_llama2_13b_bf16.sh"
+               git clone --recursive https://github.com/sallylxl/deep_learning_examples.git -b bugfix/data_dir /workspace/deep_learning_examples && \
+               DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
+               BASE_RESULTS_DIR=/workspace/deep_learning_examples/results \
+               RUN_ID=0923t2310 GBS=2048 MBS=1 PP=8 TP=4 CP=1 MAX_STEPS=128 \
+               ENABLE_CKPT=0 UB_TP_COMM_OVERLAP=0 NFS=False \
+               bash /workspace/deep_learning_examples/training/nemo/llm/gpt3_175b_2k_bf16/run_nemo_gpt3_175b_2k_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -56,28 +60,10 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /workspace/deep_learning_examples
-              name: data
-            - mountPath: /models/preset
-              name: models
-            - mountPath: /datasets/preset
-              name: datasets
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
-          - hostPath:
-              path: /data/scitix/deep_learning_examples
-              type: "DirectoryOrCreate"
-            name: data
-          - hostPath:
-              path: /data/scitix/models/preset
-              type: "DirectoryOrCreate"
-            name: models
-          - hostPath:
-              path: /data/scitix/datasets/preset
-              type: "DirectoryOrCreate"
-            name: datasets
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -88,7 +74,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: 0
+      replicas: 15
       restartPolicy: Never
       template:
         metadata:

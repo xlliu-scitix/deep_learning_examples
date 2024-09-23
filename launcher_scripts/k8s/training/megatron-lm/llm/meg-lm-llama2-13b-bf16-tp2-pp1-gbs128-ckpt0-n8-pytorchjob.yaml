@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: gpt3-5b-2k-bf16-gbs512-ckpt0-n32-0923t1158
+  name: meg-lm-llama2-13b-bf16-tp2-pp1-gbs128-ckpt0-n8
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -19,7 +19,11 @@ spec:
           - args:
             - "export NODE_RANK=$RANK && unset RANK && \
                git clone --recursive https://github.com/sallylxl/deep_learning_examples.git -b bugfix/data_dir /workspace/deep_learning_examples && \
-               DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples BASE_RESULTS_DIR=/workspace/deep_learning_examples/results     RUN_ID=0923t1158 GBS=512 MBS=4 PP=1 TP=1 MAX_STEPS=128     ENABLE_CKPT=0 UB_TP_COMM_OVERLAP=0 NFS=False     bash /workspace/deep_learning_examples/training/nemo/llm/gpt3_5b_2k_bf16/run_nemo_gpt3_5b_2k_bf16.sh"
+               DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
+               BASE_RESULTS_DIR=/workspace/deep_learning_examples/results \
+               RUN_ID=0 GBS=128 MBS=1 PP=1 TP=2 MAX_STEPS=128 \
+               ENABLE_CKPT=0 MOCK_DATA=true \
+               bash /workspace/deep_learning_examples/training/Megatron-LM/llm/llama/run_meg_lm_llama2_13b_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -70,7 +74,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: 3
+      replicas: 0
       restartPolicy: Never
       template:
         metadata:
