@@ -61,7 +61,7 @@ fi
 SCRIPT_DIR=$(realpath $(dirname $0)) # Get the directory of the current script
 envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 NFS=${NFS:-True}
-if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
+if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" != "xTrue" ] ;then
         mkdir -p ${RESULTS_DIR}
         ENABLE_CKPT=${ENABLE_CKPT:-False} \
 	UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \

@@ -20,7 +20,7 @@ DATASET_DIR=${DATASET_DIR:-/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K/}
 
 TP=${TP:-8}
 PP=${PP:-1}
-GBS=${GBS:-256}
+GBS=${GBS:-$((256*WORLD_SIZE))}
 MBS=${MBS:-32}
 
 # Check if the world_size is divisable by TP * PP

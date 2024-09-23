@@ -32,7 +32,7 @@ TP=${TP:-4}
 PP=${PP:-8}
 VPP=${VPP:-6}
 CP=${CP:-1}
-GBS=${GBS:-2048}
+GBS=${GBS:-$((128*WORLD_SIZE))}
 MBS=${MBS:-1}
 MAX_STEPS=${MAX_STEPS:-128}
 
@@ -63,7 +63,7 @@ fi
 SCRIPT_DIR=$(realpath $(dirname $0)) # Get the directory of the current script
 envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 NFS=${NFS:-True}
-if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
+if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" != "xTrue" ] ;then
         mkdir -p ${RESULTS_DIR}
         ENABLE_CKPT=${ENABLE_CKPT:-False} \
 	UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
