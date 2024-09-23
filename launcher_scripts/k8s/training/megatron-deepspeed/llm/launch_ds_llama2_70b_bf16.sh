@@ -2,7 +2,7 @@
 
 set -ex
 
-GPU_NUMS=${GPU_NUMS:-32}
+GPU_NUMS=${GPU_NUMS:-16}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
     WORLD_SIZE=1
