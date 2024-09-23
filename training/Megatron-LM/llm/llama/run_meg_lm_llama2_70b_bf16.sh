@@ -35,7 +35,7 @@ MIN_LR=3.0e-5
 INIT_STD=0.01
 TP=${TP:-4}
 PP=${PP:-4}
-GBS=${GBS:-128}
+GGBS=${GBS:-$((128*WORLD_SIZE))}
 MBS=${MBS:-1}
 
 # setup training parameters
