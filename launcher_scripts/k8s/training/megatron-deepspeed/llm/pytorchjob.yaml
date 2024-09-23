@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ds-gpt3-5b-2k-bf16-n32-gbs2048-ckpt0-0919t2313
+  name: ds-gpt3-175b-2k-bf16-gbs512-ckpt0-n32-0923t1346
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -17,7 +17,9 @@ spec:
         spec: &job-spec
           containers:
           - args:
-            - "export NODE_RANK=$RANK && unset RANK && pip install deepspeed && DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples BASE_RESULTS_DIR=/workspace/deep_learning_examples/results     RUN_ID=0919t2313 GBS=2048 MBS=4 PP=1 TP=1 MAX_STEPS=128     ENABLE_CKPT=0 DATA_DIR=/datasets/preset/bigscience/oscar-en     bash /workspace/deep_learning_examples/training/Megatron-DeepSpeed/llm/gpt3/run_ds_gpt3_5b_2k_bf16.sh"
+            - "pip install transformers deepspeed && export NODE_RANK=$RANK && unset RANK && \
+	             git clone --recursive https://github.com/sallylxl/deep_learning_examples.git -b bugfix/data_dir /workspace/deep_learning_examples && \
+               DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples BASE_RESULTS_DIR=/workspace/deep_learning_examples/results     RUN_ID=0923t1346 GBS=512 MBS=1 PP=8 TP=4 MAX_STEPS=128     ENABLE_CKPT=0 DATA_DIR=/datasets/preset/bigscience/oscar-en     bash /workspace/deep_learning_examples/training/Megatron-DeepSpeed/llm/gpt3/run_ds_gpt3_175b_2k_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -54,18 +56,12 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /workspace/deep_learning_examples
-              name: data
             - mountPath: /datasets/preset
               name: datasets
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
-          - hostPath:
-              path: /data/scitix/deep_learning_examples
-              type: "DirectoryOrCreate"
-            name: data
           - hostPath:
               path: /data/scitix/datasets/preset
               type: "DirectoryOrCreate"

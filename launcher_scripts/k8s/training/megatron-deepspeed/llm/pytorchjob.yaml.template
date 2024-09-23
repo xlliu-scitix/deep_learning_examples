@@ -17,7 +17,9 @@ spec:
         spec: &job-spec
           containers:
           - args:
-            - "pip install transformers deepspeed && export NODE_RANK=$RANK && unset RANK && ${CMD}"
+            - "pip install transformers deepspeed && export NODE_RANK=$RANK && unset RANK && \
+	             git clone --recursive https://github.com/sallylxl/deep_learning_examples.git -b bugfix/data_dir /workspace/deep_learning_examples && \
+               ${CMD}"
             command:
             - /usr/bin/env
             - bash
@@ -33,7 +35,7 @@ spec:
                   fieldPath: metadata.name
             - name: TZ
               value: CST-8
-            image: registry-ap-southeast.scitix.ai/hpc/ngc_pytorch:23.10-py3
+            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07
             imagePullPolicy: Always 
             name: pytorch
             resources:
@@ -54,33 +56,16 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /workspace
-              name: data
-            # - mountPath: /workspace/deep_learning_examples
-            #   name: data
-            # - mountPath: /models/preset
-            #   name: models
-            # - mountPath: /datasets/preset
-            #   name: datasets
+            - mountPath: /datasets/preset
+              name: datasets
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
-          - name: data
-            persistentVolumeClaim:
-              claimName: xlliu-test
-          # - hostPath:
-          #     path: /data/scitix/deep_learning_examples
-          #     type: "DirectoryOrCreate"
-          #   name: data
-          # - hostPath:
-          #     path: /data/scitix/models/preset
-          #     type: "DirectoryOrCreate"
-          #   name: models
-          # - hostPath:
-          #     path: /data/scitix/datasets/preset
-          #     type: "DirectoryOrCreate"
-          #   name: datasets
+          - hostPath:
+              path: /data/scitix/datasets/preset
+              type: "DirectoryOrCreate"
+            name: datasets
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:

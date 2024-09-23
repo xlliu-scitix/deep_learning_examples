@@ -15,7 +15,7 @@ DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learni
 DATA_DIR=${DATA_DIR:-/datasets/preset/bigscience/oscar-en}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
-TP=${TP:-8}
+TP=${TP:-4}
 PP=${PP:-8}
 SEQ_LEN=2048
 GBS=${GBS:-$((128*WORLD_SIZE))}
