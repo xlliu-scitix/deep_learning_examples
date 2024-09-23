@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -x
+set -ex
+
 GPU_NUMS=${GPU_NUMS:-8}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0

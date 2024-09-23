@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 # setup env
 export NCCL_IB_TIMEOUT=22
