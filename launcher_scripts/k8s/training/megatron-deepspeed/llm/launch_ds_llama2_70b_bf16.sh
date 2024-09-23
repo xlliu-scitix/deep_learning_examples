@@ -50,7 +50,7 @@ JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
 GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
 RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
 CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-    RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
+    RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS TP=$TP PP=$PP  MAX_STEPS=${MAX_STEPS} \
     ENABLE_CKPT=${ENABLE_CKPT} DATA_DIR=${DATA_DIR} \
     bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-DeepSpeed/llm/llama/run_${MODEL}.sh" \
 python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
