@@ -5,9 +5,9 @@ set -ex
 # setup env
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NCCL_IB_TIMEOUT=22
-#export NCCL_NVLS_ENABLES=0
-#export NCCL_NET_GDR_LEVEL=3
-#export NCCL_IB_QPS_PER_CONNECTION=2
+export NCCL_NVLS_ENABLES=0
+export NCCL_NET_GDR_LEVEL=3
+export NCCL_IB_QPS_PER_CONNECTION=2
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
@@ -17,31 +17,31 @@ VOCAB_FILE=${VOCAB_FILE:-${DATA_DIR}/gpt2-vocab.json}
 MERGE_FILE=${MERGE_FILE:-${DATA_DIR}/gpt2-merges.txt}
 DATA_PATH=${DATA_PATH:-${DATA_DIR}/meg-gpt2_text_document}
 
-# Runs the "175B" parameter model
-## GPT-3 models use 2K sequence length/context window
-MODEL="ds_gpt3_175b_2k_bf16"
+# Runs the "70B" parameter model
+## Llama2 models use 2K sequence length/context window
 SEQ_LENGTH=2048
-# GPT-175B model architecture
-HIDDEN_SIZE=12288
-FFN_HIDDEN_SIZE=$((4*HIDDEN_SIZE))
-NUM_LAYERS=96
-	NUM_ATTENTION_HEADS=96
-	LR=1.0e-4
-MIN_LR=1.0e-6
-INIT_STD=0.005
-TP=${TP:-16}
-PP=${PP:-8}
+MODEL="meg_lm_llama2_70b_bf16"
+## Llama2-70B model architecture
+HIDDEN_SIZE=8192
+FFN_HIDDEN_SIZE=28672
+NUM_LAYERS=80
+NUM_ATTENTION_HEADS=64
+LR=3.0e-4
+MIN_LR=3.0e-5
+INIT_STD=0.01
+TP=${TP:-4}
+PP=${PP:-4}
 SP=${SP:-1}
-GBS=${GBS:-2048}
+GBS=${GBS:-128} #2048
 MBS=${MBS:-1}
 
-ZERO_STAGE=${ZERO_STAGE:-3}
+ZERO_STAGE=${ZERO_STAGE:-2}
 
 # setup training parameters
 GPUS_PER_NODE=${GPUS_PER_NODE:-8}
 MASTER_ADDR=${MASTER_ADDR:-localhost}
 MASTER_PORT=${MASTER_PORT:-6000}
-NUM_NODES=${WORLD_SIZE:-1}
+NUM_NODES=${WORLD_SIZE:-4}
 NODE_RANK=${RANK:-0} # pytorchjob will set RANK but NODE_RANK
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
@@ -126,12 +126,32 @@ DISTRIBUTED_ARGS=(
 #        --rdzv-endpoint= $MASTER_ADDR:$MASTER_PORT
 # )
 
+# Below configuration required for llama model as per llama paper
+# --no-query-key-layer-scaling \
+# --attention-dropout 0 \
+# --hidden-dropout 0 \
+# --use-rotary-position-embeddings \
+# --untie-embeddings-and-output-weights \
+# --swiglu \
+# --normalization rmsnorm \
+# --disable-bias-linear \
+######################################
+
 MODEL_ARGS=(
     --num-layers ${NUM_LAYERS} 
     --hidden-size ${HIDDEN_SIZE} 
-    --num-attention-heads ${NUM_ATTENTION_HEADS} 
+    --num-attention-heads ${NUM_ATTENTION_HEADS}
+    --num-key-value-heads 8
     --seq-length ${SEQ_LENGTH} 
-    --max-position-embeddings ${SEQ_LENGTH} 
+    --max-position-embeddings ${SEQ_LENGTH}
+    --no-query-key-layer-scaling
+    --attention-dropout 0
+    --hidden-dropout 0
+    --use-rotary-position-embeddings
+    --untie-embeddings-and-output-weights
+    --swiglu
+    --normalization rmsnorm
+    --disable-bias-linear
 )
 
 TRAINING_ARGS=(
@@ -139,6 +159,7 @@ TRAINING_ARGS=(
     --micro-batch-size $MBS
     --global-batch-size $GBS
     --train-iters $MAX_STEPS
+    --optimizer adam
     --weight-decay 0.1
     --adam-beta1 0.9
     --adam-beta2 0.95

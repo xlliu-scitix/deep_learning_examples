@@ -46,8 +46,8 @@ MAX_STEPS=${MAX_STEPS:-128}
 EVAL_ITERS=${EVAL_ITERS:-10}
 ##set --save-interval to a very large number, effectively disabling saving ckpt for practical purposes
 ## same as EVAL_INTERVAL
-SAVE_INTERVAL=${SAVE_INTERVAL:-100000000}
-EVAL_INTERVAL=${EVAL_INTERVAL:-1000}
+SAVE_INTERVAL=${SAVE_INTERVAL:-100}
+EVAL_INTERVAL=${EVAL_INTERVAL:-100}
 LOG_INTERVAL=${LOG_INTERVAL:-10}
 
 # setup experiment result dir
@@ -102,19 +102,18 @@ TRAINING_ARGS=(
     --lr-decay-iters 430000
     --use-flash-attn
     --use-distributed-optimizer
-    --distributed-backend nccl
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
-    TRAINING_ARGS+=(
-        --save ${CHECKPOINT_PATH}
-        --load ${LOAD_CHECKPOINT_PATH}
-    )
+  TRAINING_ARGS+=(
+      --save ${CHECKPOINT_PATH}
+      --load ${LOAD_CHECKPOINT_PATH}
+  )
 fi
 
 MODEL_PARALLEL_ARGS=(
     --tensor-model-parallel-size $TP
-    --pipeline-model-parallel-size $PP 
+    --pipeline-model-parallel-size $PP
 )
 
 if [[ $(echo "$MOCK_DATA" |tr '[:upper:]' '[:lower:]') == "true" ||  $MOCK_DATA -eq 1 ]]; then
