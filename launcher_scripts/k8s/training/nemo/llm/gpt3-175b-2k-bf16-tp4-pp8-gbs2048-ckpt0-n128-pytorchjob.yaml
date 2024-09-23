@@ -18,7 +18,7 @@ spec:
           containers:
           - args:
             - "export NODE_RANK=$RANK && unset RANK && \
-               git clone --recursive https://github.com/sallylxl/deep_learning_examples.git -b bugfix/data_dir /workspace/deep_learning_examples && \
+               git clone --recursive https://github.com/sallylxl/deep_learning_examples.git /workspace/deep_learning_examples && \
                DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
                BASE_RESULTS_DIR=/workspace/deep_learning_examples/results \
                RUN_ID=0923t2310 GBS=2048 MBS=1 PP=8 TP=4 CP=1 MAX_STEPS=128 \
