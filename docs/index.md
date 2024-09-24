@@ -4,42 +4,20 @@ title: Index
 nav_exclude: true
 ---
 
-# Read The Docs Theme for Jekyll and GitHub Pages
+# Example scripts for deep learing
 
-This is a port of the
-[Read The Docs](https://sphinx-rtd-theme.readthedocs.io) theme to
-[Jekyll](https://jekyllrb.com/), so that it can be used with GitHub Pages.
+This repository contains example scripts for deep learning. 
 
-You are previewing the theme right now, as you navigate
-[this documentation](https://carlosperate.github.io/jekyll-theme-rtd):
+## Scripts Overview
 
-![screenshot](assets/img/screenshot.png)
+### Pretraining 
+#### LLM Pretraining
 
-The original [Read The Docs](https://readthedocs.org)
-[theme]((https://sphinx-rtd-theme.readthedocs.io)) was created for the
-[Sphinx](https://www.sphinx-doc.org/) documentation generator, and so it is
-designed specifically for docs.
++  **[NeMo LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm)** : Contains example scripts for pretraining LLM Models using the [NeMo Framework](https://docs.nvidia.com/nemo-framework/user-guide/latest/).  These scripts are adapted from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher/tree/main)
++  **[Megatron-LM LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-LM/llm/gpt3)** : Contains example scripts for pretraining LLM Models that adapted from [Megatron-LM](https://github.com/NVIDIA/Megatron-LM).
++  **[Megatron-DeepSpeed LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-DeepSpeed/llm/gpt3)** : Contains example scripts for pretraining LLM Models that adapted from[Megatron-DeepSpeed](https://github.com/microsoft/Megatron-DeepSpeed)
 
-Combined with [GitHub Pages](https://pages.github.com) it's a great and easy
-way to document your projects!
+#### Multimodal Models
 
-## What Can You Find Around Here
-
-- Check out the [Quick Start Guide](https://carlosperate.github.io/jekyll-theme-rtd/quickstart.html) to get up and running.
-- If some of the terms thrown around here don't make a lot of sense, check out the [What is All This? (FAQs)](https://carlosperate.github.io/jekyll-theme-rtd/faqs.html) page.
-- To find out more about all the theme available options see the
-  [Theme Configuration](https://carlosperate.github.io/jekyll-theme-rtd/configuration/configyml.html)
-  and the [Pages Configuration](https://carlosperate.github.io/jekyll-theme-rtd/configuration/frontmatter.html)
-  pages.
-
-## 🚧 Warning!
-
-This theme is currently a **Work-In-Progress** but, while some things might be
-broken, it should be already usable.
-
-Missing features are listed in the GitHub issues with the
-[to-do label](https://github.com/carlosperate/jekyll-theme-rtd/issues?q=is%3Aissue+is%3Aopen+label%3Ato-do),
-and any known issues are listed with the
-[bug label](https://github.com/carlosperate/jekyll-theme-rtd/issues?q=is%3Aissue+is%3Aopen+label%3Abug).
-
-Contributions are very welcomed!
+- [training/nemo/neva](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/neva)
+  : Scripts to Multimodal Models - NeVa (LLaVA) pretraining with recommended config (from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher)) on NVIDIA H100, in fp16 data type, running on NeMo Framework
