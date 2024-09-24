@@ -5,9 +5,13 @@ set -ex
 # setup env
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NCCL_IB_TIMEOUT=22
-# export NCCL_NVLS_ENABLES=0
+export NCCL_NVLS_ENABLES=0
 export NCCL_NET_GDR_LEVEL=3
 export NCCL_IB_QPS_PER_CONNECTION=2
+if [ -n "$RANK" ];then
+  export NODE_RANK=${RANK} # pytorchjob will set RANK but NODE_RANK
+  unset RANK
+fi
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
@@ -46,8 +50,8 @@ MAX_STEPS=${MAX_STEPS:-128}
 EVAL_ITERS=${EVAL_ITERS:-10}
 ##set --save-interval to a very large number, effectively disabling saving ckpt for practical purposes
 ## same as EVAL_INTERVAL
-SAVE_INTERVAL=${SAVE_INTERVAL:-100000000}
-EVAL_INTERVAL=${EVAL_INTERVAL:-1000}
+SAVE_INTERVAL=${SAVE_INTERVAL:-100}
+EVAL_INTERVAL=${EVAL_INTERVAL:-100}
 LOG_INTERVAL=${LOG_INTERVAL:-10}
 
 # setup experiment result dir
@@ -102,19 +106,18 @@ TRAINING_ARGS=(
     --lr-decay-iters 430000
     --use-flash-attn
     --use-distributed-optimizer
-    --distributed-backend nccl
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
-    TRAINING_ARGS+=(
-        --save ${CHECKPOINT_PATH}
-        --load ${LOAD_CHECKPOINT_PATH}
-    )
+  TRAINING_ARGS+=(
+      --save ${CHECKPOINT_PATH}
+      --load ${LOAD_CHECKPOINT_PATH}
+  )
 fi
 
 MODEL_PARALLEL_ARGS=(
     --tensor-model-parallel-size $TP
-    --pipeline-model-parallel-size $PP 
+    --pipeline-model-parallel-size $PP
 )
 
 if [[ $(echo "$MOCK_DATA" |tr '[:upper:]' '[:lower:]') == "true" ||  $MOCK_DATA -eq 1 ]]; then
@@ -140,6 +143,10 @@ EVAL_AND_LOGGING_ARGS=(
     --tensorboard-dir $TENSORBOARD_LOGS_DIR
     --log-throughput
 )
+
+# To fix Error: cannot import name ‘helpers’ from ‘megatron.core.datasets’
+cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
+g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
 
 torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
     ${MODEL_ARGS[@]} \

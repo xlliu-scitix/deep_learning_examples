@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-gbs${GBS}-ckpt${ENABLE_CKPT}-n${GPU_NUMS}-${RUN_ID}
+  name: meg-lm-llama2-70b-bf16-tp4-pp4-gbs512-ckpt0-n32
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -17,9 +17,13 @@ spec:
         spec: &job-spec
           containers:
           - args:
-            - "pip install transformers deepspeed && export NODE_RANK=$RANK && unset RANK && \
-	             git clone --recursive https://github.com/sallylxl/deep_learning_examples.git /workspace/deep_learning_examples && \
-               ${CMD}"
+            - "export NODE_RANK=$RANK && unset RANK && \
+               git clone --recursive https://github.com/sallylxl/deep_learning_examples.git /workspace/deep_learning_examples && \
+               DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
+               BASE_RESULTS_DIR=/workspace/deep_learning_examples/results \
+               RUN_ID=0 GBS=128 MBS=1 PP=4 TP=4 MAX_STEPS=128 \
+               ENABLE_CKPT=0 MOCK_DATA=true \
+               bash /workspace/deep_learning_examples/training/Megatron-LM/llm/llama/run_meg_lm_llama2_70b_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -56,16 +60,10 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /datasets/preset
-              name: datasets
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
-          - hostPath:
-              path: /data/scitix/datasets/preset
-              type: "DirectoryOrCreate"
-            name: datasets
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -76,7 +74,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: $WORKER_NUMS
+      replicas: 3
       restartPolicy: Never
       template:
         metadata:

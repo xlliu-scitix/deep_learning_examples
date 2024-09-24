@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 # setup
 export NCCL_IB_TIMEOUT=22
@@ -12,8 +12,10 @@ export NVTE_ASYNC_AMAX_REDUCTION=1
 export NVTE_FUSED_ATTN=0
 export NCCL_IB_QPS_PER_CONNECTION=2
 export NCCL_NET_GDR_LEVEL=3
-export NODE_RANK=${RANK:-0}
-unset RANK
+if [ -n "$RANK" ];then
+  export NODE_RANK=${RANK}
+  unset RANK
+fi
 UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-False}
 export TOKENIZERS_PARALLELISM=${UB_TP_COMM_OVERLAP}
 
@@ -59,7 +61,7 @@ fi
 SCRIPT_DIR=$(realpath $(dirname $0)) # Get the directory of the current script
 envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 NFS=${NFS:-True}
-if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
+if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" != "xTrue" ] ;then
         mkdir -p ${RESULTS_DIR}
         ENABLE_CKPT=${ENABLE_CKPT:-False} \
 	UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \

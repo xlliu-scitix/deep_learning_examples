@@ -29,7 +29,7 @@ NUM_ATTENTION_HEADS=96
 LR=1.0e-4
 MIN_LR=1.0e-6
 INIT_STD=0.005
-TP=${TP:-8}
+TP=${TP:-4}
 PP=${PP:-8}
 GBS=${GBS:-2048}
 MBS=${MBS:-1}
@@ -141,6 +141,11 @@ EVAL_AND_LOGGING_ARGS=(
     --tensorboard-dir $TENSORBOARD_LOGS_DIR
     --log-throughput
 )
+
+
+# To fix Error: cannot import name ‘helpers’ from ‘megatron.core.datasets’
+cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
+g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
 
 torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
     ${MODEL_ARGS[@]} \

@@ -21,25 +21,25 @@ VOCAB_FILE=${VOCAB_FILE:-${DATA_DIR}/gpt2-vocab.json}
 MERGE_FILE=${MERGE_FILE:-${DATA_DIR}/gpt2-merges.txt}
 DATA_PATH=${DATA_PATH:-${DATA_DIR}/meg-gpt2_text_document}
 
-# Runs the "175B" parameter model
-## GPT-3 models use 2K sequence length/context window
-MODEL="ds_gpt3_175b_2k_bf16"
-SEQ_LENGTH=2048
-# GPT-175B model architecture
-HIDDEN_SIZE=12288
-FFN_HIDDEN_SIZE=$((4*HIDDEN_SIZE))
-NUM_LAYERS=96
-NUM_ATTENTION_HEADS=96
-LR=1.0e-4
-MIN_LR=1.0e-6
-INIT_STD=0.005
-TP=${TP:-4}
-PP=${PP:-8}
+# Runs the "13B" parameter model
+## Llama2 models use 4K sequence length/context window
+SEQ_LENGTH=4096
+MODEL="ds_llama2_13b_bf16"
+## Llama2-13B model architecture
+HIDDEN_SIZE=5120
+FFN_HIDDEN_SIZE=13824
+NUM_LAYERS=40
+NUM_ATTENTION_HEADS=40
+LR=3.0e-4
+MIN_LR=3.0e-5
+INIT_STD=0.01
+TP=${TP:-2}
+PP=${PP:-1}
 SP=${SP:-1}
-GGBS=${GBS:-$((128*WORLD_SIZE))}
+GGBS=${GBS:-$((128*WORLD_SIZE))} #2048
 MBS=${MBS:-1}
 
-ZERO_STAGE=${ZERO_STAGE:-3}
+ZERO_STAGE=${ZERO_STAGE:-2}
 
 # setup training parameters
 GPUS_PER_NODE=${GPUS_PER_NODE:-8}
@@ -113,7 +113,7 @@ if [ $ZERO_STAGE -gt 1 ]; then
   DEEPSPEED_ARGS=" --no-pipeline-parallel ${DEEPSPEED_ARGS}"
   PP=1
 fi
-DEEPSPEED_ARGS=" --ds-sequence-parallel-size $SP ${DEEPSPEED_ARGS}"
+#DEEPSPEED_ARGS=" --ds-sequence-parallel-size $SP ${DEEPSPEED_ARGS}"
 
 DISTRIBUTED_ARGS=(
     --nproc_per_node $GPUS_PER_NODE 
@@ -130,12 +130,31 @@ DISTRIBUTED_ARGS=(
 #        --rdzv-endpoint= $MASTER_ADDR:$MASTER_PORT
 # )
 
+# Below configuration required for llama model as per llama paper
+# --no-query-key-layer-scaling \
+# --attention-dropout 0 \
+# --hidden-dropout 0 \
+# --use-rotary-position-embeddings \
+# --untie-embeddings-and-output-weights \
+# --swiglu \
+# --normalization rmsnorm \
+# --disable-bias-linear \
+######################################
+
 MODEL_ARGS=(
     --num-layers ${NUM_LAYERS} 
     --hidden-size ${HIDDEN_SIZE} 
     --num-attention-heads ${NUM_ATTENTION_HEADS} 
     --seq-length ${SEQ_LENGTH} 
-    --max-position-embeddings ${SEQ_LENGTH} 
+    --max-position-embeddings ${SEQ_LENGTH}
+    --no-query-key-layer-scaling
+    --attention-dropout 0
+    --hidden-dropout 0
+    --use-rotary-position-embeddings
+    --untie-embeddings-and-output-weights
+    --swiglu
+    --normalization rmsnorm
+    --disable-bias-linear
 )
 
 TRAINING_ARGS=(
@@ -143,6 +162,7 @@ TRAINING_ARGS=(
     --micro-batch-size $MBS
     --global-batch-size $GBS
     --train-iters $MAX_STEPS
+    --optimizer adam
     --weight-decay 0.1
     --adam-beta1 0.9
     --adam-beta2 0.95

@@ -12,8 +12,10 @@ export NVTE_ASYNC_AMAX_REDUCTION=1
 export NVTE_FUSED_ATTN=0
 export NCCL_IB_QPS_PER_CONNECTION=2
 export NCCL_NET_GDR_LEVEL=3
-export NODE_RANK=${RANK:-0}
-unset RANK
+if [ -n "$RANK" ];then
+  export NODE_RANK=${RANK}
+  unset RANK
+fi
 UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-False}
 export TOKENIZERS_PARALLELISM=${UB_TP_COMM_OVERLAP}
 
@@ -24,11 +26,11 @@ BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 
 # setup training parameters
 WORLD_SIZE=${WORLD_SIZE:-1}
-TP=${TP:-1}
-PP=${PP:-4}
-VPP=${VPP:-10}
+TP=${TP:-2}
+PP=${PP:-1}
+VPP=${VPP:-1}
 SEQ_LEN=4096
-GBS=${GBS:-128}
+GBS=${GBS:-256}
 MBS=${MBS:-1}
 MAX_STEPS=${MAX_STEPS:-128}
 
@@ -59,7 +61,7 @@ fi
 SCRIPT_DIR=$(realpath $(dirname $0)) # Get the directory of the current script
 envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 NFS=${NFS:-True}
-if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" == "x" ] ;then
+if [ $NODE_RANK -eq 0 ] || [ "x${NFS}" != "xTrue" ] ;then
         mkdir -p ${RESULTS_DIR}
         ENABLE_CKPT=${ENABLE_CKPT:-False} \
 	UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \

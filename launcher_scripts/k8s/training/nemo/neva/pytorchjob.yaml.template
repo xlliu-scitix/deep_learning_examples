@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-gbs${GBS}-ckpt${ENABLE_CKPT}-n${GPU_NUMS}-${RUN_ID}
+  name: ${JOB_PREFIX}-gbs${GBS}-n${GPU_NUMS}-${RUN_ID}
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -12,14 +12,10 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
-          labels:
-            scitix.ai/topo-aware-in-node: "true"
         spec: &job-spec
           containers:
           - args:
-            - "pip install transformers deepspeed && export NODE_RANK=$RANK && unset RANK && \
-	             git clone --recursive https://github.com/sallylxl/deep_learning_examples.git /workspace/deep_learning_examples && \
-               ${CMD}"
+            - "export NODE_RANK=$RANK && unset RANK && ${CMD}"
             command:
             - /usr/bin/env
             - bash
@@ -56,12 +52,30 @@ spec:
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /workspace/deep_learning_examples
+              name: data
+            - mountPath: /models/preset
+              name: models
             - mountPath: /datasets/preset
               name: datasets
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
+          - hostPath:
+              path: /data/scitix/tmp
+              type: ""
+            name: tmp
+          - hostPath:
+              path: /data/scitix/deep_learning_examples
+              type: "DirectoryOrCreate"
+            name: data
+          - hostPath:
+              path: /data/scitix/models/preset
+              type: "DirectoryOrCreate"
+            name: models
           - hostPath:
               path: /data/scitix/datasets/preset
               type: "DirectoryOrCreate"

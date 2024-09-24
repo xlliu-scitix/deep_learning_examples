@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -x
+set -ex
+
 GPU_NUMS=${GPU_NUMS:-8}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
@@ -20,7 +21,7 @@ DATASET_DIR=${DATASET_DIR:-/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K/}
 
 TP=${TP:-4}
 PP=${PP:-1}
-GBS=${GBS:-256}
+GBS=${GBS:-$((256*WORLD_SIZE))}
 MBS=${MBS:-32}
 
 # Check if the world_size is divisable by TP * PP
@@ -57,9 +58,9 @@ CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=$
     PRETRAINED_LLM_PATH=${PRETRAINED_LLM_PATH} \
 	PRETRAINED_VISION_ENCODER_PATH=${PRETRAINED_VISION_ENCODER_PATH} \
 	DATASET_DIR=${DATASET_DIR} \
-    RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
+    RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS TP=$TP PP=$PP  MAX_STEPS=${MAX_STEPS} \
     ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
     bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva/run_nemo_${MODEL}.sh" \
-python3 $envsubst_py -i pytorchjob-nemo.yaml.template -o pytorchjob-nemo.yaml
+python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
 
-kubectl apply -f pytorchjob-nemo.yaml
+kubectl apply -f pytorchjob.yaml

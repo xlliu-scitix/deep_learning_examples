@@ -21,31 +21,28 @@ VOCAB_FILE=${VOCAB_FILE:-${DATA_DIR}/gpt2-vocab.json}
 MERGE_FILE=${MERGE_FILE:-${DATA_DIR}/gpt2-merges.txt}
 DATA_PATH=${DATA_PATH:-${DATA_DIR}/meg-gpt2_text_document}
 
-# Runs the "175B" parameter model
-## GPT-3 models use 2K sequence length/context window
-MODEL="ds_gpt3_175b_2k_bf16"
+# Runs the "70B" parameter model
+## Llama2 models use 2K sequence length/context window
 SEQ_LENGTH=2048
-# GPT-175B model architecture
-HIDDEN_SIZE=12288
-FFN_HIDDEN_SIZE=$((4*HIDDEN_SIZE))
-NUM_LAYERS=96
-NUM_ATTENTION_HEADS=96
-LR=1.0e-4
-MIN_LR=1.0e-6
-INIT_STD=0.005
+MODEL="meg_lm_llama2_70b_bf16"
+## Llama2-70B model architecture
+HIDDEN_SIZE=8192
+FFN_HIDDEN_SIZE=28672
+NUM_LAYERS=80
+NUM_ATTENTION_HEADS=64
+LR=3.0e-4
+MIN_LR=3.0e-5
+INIT_STD=0.01
 TP=${TP:-4}
-PP=${PP:-8}
-SP=${SP:-1}
+PP=${PP:-4}
 GGBS=${GBS:-$((128*WORLD_SIZE))}
 MBS=${MBS:-1}
-
-ZERO_STAGE=${ZERO_STAGE:-3}
 
 # setup training parameters
 GPUS_PER_NODE=${GPUS_PER_NODE:-8}
 MASTER_ADDR=${MASTER_ADDR:-localhost}
 MASTER_PORT=${MASTER_PORT:-6000}
-NUM_NODES=${WORLD_SIZE:-1}
+NUM_NODES=${WORLD_SIZE:-4}
 NODE_RANK=${NODE_RANK:-0}
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
@@ -60,7 +57,7 @@ LOG_INTERVAL=${LOG_INTERVAL:-10}
 # setup experiment result dir
 CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
 RUN_ID=${RUN_ID:-${CURR_TIME}}
-RESULTS_DIR=${BASE_RESULTS_DIR}/${MODEL}/ds_z${ZERO_STAGE}_tp${TP}_pp${PP}_n${WORLD_SIZE}_gbs${GBS}_mbs${MBS}_${RUN_ID}
+RESULTS_DIR=${BASE_RESULTS_DIR}/${MODEL}/tp${TP}_pp${PP}_n${WORLD_SIZE}_gbs${GBS}_mbs${MBS}_${RUN_ID}
 CHECKPOINT_PATH=${RESULTS_DIR}/ckpt
 LOAD_CHECKPOINT_PATH=${LOAD_CHECKPOINT_PATH:-$CHECKPOINT_PATH}
 TENSORBOARD_LOGS_DIR=${RESULTS_DIR}/tensorboard
@@ -68,53 +65,7 @@ mkdir -p $CHECKPOINT_PATH
 mkdir -p $TENSORBOARD_LOGS_DIR
 ENABLE_CKPT=${ENABLE_CKPT:-0}
 
-# Deepspeed Configuration
-DS_CONFIG=${OUTPUT_DIR}/ds_config.json
-cat <<EOT > $DS_CONFIG
-{
-  "train_batch_size" : $GBS,
-  "train_micro_batch_size_per_gpu": $MBS,
-  "steps_per_print": ${LOG_INTERVAL},
-  "zero_optimization": {
-    "stage": $ZERO_STAGE
-  },
-  "bf16": {
-    "enabled": true
-  },
-
-  "wall_clock_breakdown" : false
-}
-EOT
-
-DTYPE="bf16"
-
 # Training Command Arguments
-
-## Set Deepspeed Arguments
-DEEPSPEED_ARGS=" "
-DEEPSPEED_ARGS=" --deepspeed ${DEEPSPEED_ARGS}"
-DEEPSPEED_ARGS=" --deepspeed_config=$DS_CONFIG ${DEEPSPEED_ARGS}"
-DEEPSPEED_ARGS=" --zero-stage=$ZERO_STAGE ${DEEPSPEED_ARGS}"
-## Activation checkpointing saves GPU memory, but reduces training speed
-ACTIVATION_CHECKPOINT="true"
-if [ "${ACTIVATION_CHECKPOINT}" = "true" ]; then
-  DEEPSPEED_ARGS="--deepspeed-activation-checkpointing ${DEEPSPEED_ARGS}"
-
-  ## old argument for recomputing the transformer layer
-  # DEEPSPEED_ARGS="--checkpoint-activations ${DEEPSPEED_ARGS}"
-
-  ## new argument for recomputing the transformer layer
-  DEEPSPEED_ARGS="--recompute-granularity full --recompute-method uniform ${DEEPSPEED_ARGS}"
-  ## new argument for recomputing only the attention layer
-  # DEEPSPEED_ARGS="--recompute-granularity selective ${DEEPSPEED_ARGS}"
-fi
-
-if [ $ZERO_STAGE -gt 1 ]; then
-  DEEPSPEED_ARGS=" --no-pipeline-parallel ${DEEPSPEED_ARGS}"
-  PP=1
-fi
-DEEPSPEED_ARGS=" --ds-sequence-parallel-size $SP ${DEEPSPEED_ARGS}"
-
 DISTRIBUTED_ARGS=(
     --nproc_per_node $GPUS_PER_NODE 
     --nnodes $NUM_NODES 
@@ -130,16 +81,35 @@ DISTRIBUTED_ARGS=(
 #        --rdzv-endpoint= $MASTER_ADDR:$MASTER_PORT
 # )
 
+# Below configuration required for llama model as per llama paper
+# --no-query-key-layer-scaling \
+# --attention-dropout 0 \
+# --hidden-dropout 0 \
+# --use-rotary-position-embeddings \
+# --untie-embeddings-and-output-weights \
+# --swiglu \
+# --normalization rmsnorm \
+# --disable-bias-linear \
+######################################
+
 MODEL_ARGS=(
     --num-layers ${NUM_LAYERS} 
     --hidden-size ${HIDDEN_SIZE} 
-    --num-attention-heads ${NUM_ATTENTION_HEADS} 
+    --num-attention-heads ${NUM_ATTENTION_HEADS}
     --seq-length ${SEQ_LENGTH} 
-    --max-position-embeddings ${SEQ_LENGTH} 
+    --max-position-embeddings ${SEQ_LENGTH}
+    --group-query-attention
+    --num-query-groups 8
+    --attention-dropout 0
+    --hidden-dropout 0
+    --use-rotary-position-embeddings
+    --untie-embeddings-and-output-weights
+    --swiglu
+    --normalization RMSNorm 
+    --disable-bias-linear
 )
 
 TRAINING_ARGS=(
-    --override-opt_param-scheduler
     --micro-batch-size $MBS
     --global-batch-size $GBS
     --train-iters $MAX_STEPS
@@ -148,15 +118,15 @@ TRAINING_ARGS=(
     --adam-beta2 0.95
     --init-method-std 0.006
     --clip-grad 1.0
-    --hysteresis 2
     --bf16
     --lr ${LR}
     --lr-decay-style cosine
     --min-lr ${MIN_LR}
     --lr-warmup-fraction .001
     --lr-decay-iters 430000
-    --use-flash-attn-v2
-    --no-async-tensor-model-parallel-allreduce
+    --sequence-parallel
+    --use-flash-attn
+    --use-distributed-optimizer
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
@@ -171,38 +141,38 @@ MODEL_PARALLEL_ARGS=(
     --pipeline-model-parallel-size $PP
 )
 
-DATA_ARGS=(
-    --data-impl mmap
-    --data-path $DATA_PATH 
-    --vocab-file $VOCAB_FILE 
-    --merge-file $MERGE_FILE 
-    --split 949,50,1
-)
-
-# DATA_ARGS=(
-#     --data-impl mmap
-#     --data-path $DATA_PATH 
-#     --tokenizer-type GPTSentencePieceTokenizer
-#     --tokenizer-model ${TOKENIZER_PATH}
-#     --split 949,50,1
-# )
+if [[ $(echo "$MOCK_DATA" |tr '[:upper:]' '[:lower:]') == "true" ||  $MOCK_DATA -eq 1 ]]; then
+    DATA_ARGS=(
+        --mock-data
+        --vocab-size 8192
+        --tokenizer-type NullTokenizer
+    )
+else
+    DATA_ARGS=(
+        --data-path $DATA_PATH 
+        --vocab-file $VOCAB_FILE 
+        --merge-file $MERGE_FILE 
+        --split 949,50,1
+    )
+fi
 
 EVAL_AND_LOGGING_ARGS=(
     --log-interval $LOG_INTERVAL
     --save-interval $SAVE_INTERVAL
     --eval-interval $EVAL_INTERVAL 
     --eval-iters $EVAL_ITERS
-    --tensorboard-queue-size 1
-    --log-timers-to-tensorboard
-    --log-batch-size-to-tensorboard
-    --log-validation-ppl-to-tensorboard
     --tensorboard-dir $TENSORBOARD_LOGS_DIR
+    --log-throughput
 )
 
-torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-DeepSpeed/pretrain_gpt.py \
+
+# To fix Error: cannot import name ‘helpers’ from ‘megatron.core.datasets’
+cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
+g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
+
+torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
     ${MODEL_ARGS[@]} \
     ${TRAINING_ARGS[@]} \
     ${MODEL_PARALLEL_ARGS[@]} \
     ${DATA_ARGS[@]} \
-    ${EVAL_AND_LOGGING_ARGS[@]} \
-    ${DEEPSPEED_ARGS} 2>&1 |tee ${RESULTS_DIR}/log_${MODEL}.out 
+    ${EVAL_AND_LOGGING_ARGS[@]} 2>&1 |tee ${RESULTS_DIR}/log_${MODEL}.out 

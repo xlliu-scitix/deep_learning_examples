@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -x
+set -ex
+
 GPU_NUMS=${GPU_NUMS:-8}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
@@ -17,7 +18,7 @@ BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
 TP=${TP:-1}
 PP=${PP:-1}
 SEQ_LEN=2048
-GBS=${GBS:-1440}
+GBS=${GBS:-$((128*WORLD_SIZE))}
 MBS=${MBS:-4}
 # Check if the world_size is divisable by TP * PP
 global_world_size=$((WORLD_SIZE * 8))
@@ -41,6 +42,8 @@ MAX_STEPS=${MAX_STEPS:-128}
 ENABLE_CKPT=${ENABLE_CKPT:-0}
 UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP:-0}
 RUN_ID=$(date +"%m%dt%H%M")
+# If there is no NFS, generate the config file on each rank. Otherwise, generate the config file on rank 0.
+NFS=${NFS:-False}
 
 # Get the directory of the current script
 SCRIPT_DIR=$(realpath $(dirname $0))
@@ -50,9 +53,9 @@ JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
 GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
 RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
 CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-    RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS PP=$PP TP=$TP MAX_STEPS=${MAX_STEPS} \
-    ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} \
+    RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS TP=$TP PP=$PP  MAX_STEPS=${MAX_STEPS} \
+    ENABLE_CKPT=${ENABLE_CKPT} UB_TP_COMM_OVERLAP=${UB_TP_COMM_OVERLAP} NFS=${NFS} \
     bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/llm/${MODEL}/run_nemo_${MODEL}.sh" \
-python3 $envsubst_py -i pytorchjob-nemo.yaml.template -o pytorchjob-nemo.yaml
+python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
 
-kubectl apply -f pytorchjob-nemo.yaml
+kubectl apply -f pytorchjob.yaml
