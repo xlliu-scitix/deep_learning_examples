@@ -11,7 +11,7 @@ This repository contains example scripts for deep learning.
 ## Scripts Overview
 
 ### Pretraining 
-#### LLM Pretraining
+#### Large Language Models
 
 - [NeMo LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm)
 : Contains example scripts for pretraining LLM Models using the [NeMo Framework](https://docs.nvidia.com/nemo-framework/user-guide/latest/).  These scripts are adapted from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher/tree/main)
