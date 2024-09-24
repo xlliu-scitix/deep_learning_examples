@@ -13,9 +13,12 @@ This repository contains example scripts for deep learning.
 ### Pretraining 
 #### LLM Pretraining
 
-+  **[NeMo LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm)** : Contains example scripts for pretraining LLM Models using the [NeMo Framework](https://docs.nvidia.com/nemo-framework/user-guide/latest/).  These scripts are adapted from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher/tree/main)
-+  **[Megatron-LM LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-LM/llm/gpt3)** : Contains example scripts for pretraining LLM Models that adapted from [Megatron-LM](https://github.com/NVIDIA/Megatron-LM).
-+  **[Megatron-DeepSpeed LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-DeepSpeed/llm/gpt3)** : Contains example scripts for pretraining LLM Models that adapted from[Megatron-DeepSpeed](https://github.com/microsoft/Megatron-DeepSpeed)
+- [NeMo LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm)
+: Contains example scripts for pretraining LLM Models using the [NeMo Framework](https://docs.nvidia.com/nemo-framework/user-guide/latest/).  These scripts are adapted from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher/tree/main)
+- [Megatron-LM LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-LM/llm)
+: Contains example scripts for pretraining LLM Models that adapted from [Megatron-LM](https://github.com/NVIDIA/Megatron-LM).
+- [Megatron-DeepSpeed LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-DeepSpeed/llm)
+: Contains example scripts for pretraining LLM Models that adapted from[Megatron-DeepSpeed](https://github.com/microsoft/Megatron-DeepSpeed)
 
 #### Multimodal Models
 
