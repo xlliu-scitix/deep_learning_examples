@@ -21,7 +21,7 @@ spec:
                git clone --recursive https://github.com/sallylxl/deep_learning_examples.git /workspace/deep_learning_examples && \
                DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
                BASE_RESULTS_DIR=/workspace/deep_learning_examples/results \
-               RUN_ID=0923t2310 GBS=2048 MBS=1 PP=8 TP=4 CP=1 MAX_STEPS=128 \
+               RUN_ID=0 GBS=2048 MBS=1 PP=8 TP=4 CP=1 MAX_STEPS=128 \
                ENABLE_CKPT=0 UB_TP_COMM_OVERLAP=0 NFS=False \
                bash /workspace/deep_learning_examples/training/nemo/llm/gpt3_175b_2k_bf16/run_nemo_gpt3_175b_2k_bf16.sh"
             command:

@@ -21,7 +21,8 @@ NeVa builds upon LLaVA (Large Language and Vision Assistant) and supports severa
 
 ### Using [SiFlow All-in-One AI Platform](https://scitix.ai/SiflowService/index.aspx)
 
-1. **Update Variables**: Edit the example script, taking `neva_llama2_7b_chat_bf16` pretraining for example. Modify the following variables in [run_nemo_neva_llama2_7b_chat_bf16.sh](https://github.com/sallylxl/deep_learning_examples/blob/master/training/nemo/neva/run_nemo_neva_llama2_7b_chat_bf16.sh):
+- **Update Variables**
+: Edit the example script, taking `neva_llama2_7b_chat_bf16` pretraining for example. Modify the following variables in [run_nemo_neva_llama2_7b_chat_bf16.sh](https://github.com/sallylxl/deep_learning_examples/blob/master/training/nemo/neva/run_nemo_neva_llama2_7b_chat_bf16.sh):
    - `DEEP_LEARNING_EXAMPLES_DIR`: Path to the repository (default: `/workspace/deep_learning_examples`).
    - `BASE_RESULT_DIR`: Directory for experiment results (default: `$DEEP_LEARNING_EXAMPLES_DIR/results`).
    - `PRETRAINED_LLM_PATH`: Path to LLM model checkpoints and tokenizer (default: Siflow preset model path - `/models/preset/scitix/hf-to-nemo/Llama-2-7b-chat`).
@@ -29,7 +30,8 @@ NeVa builds upon LLaVA (Large Language and Vision Assistant) and supports severa
    - `DATASET_DIR`: Path to the pretraining dataset (default: Siflow preset model path - `/datasets/preset/liuhaotian/LLaVA-Pretrain-LCS-558K`).
    - `WORLD_SIZE`: Number of GPU nodes for Siflow PyTorch job (automatically set).
 
-2. **Submit a Siflow PyTorch Job**: with the following command:
+- **Submit a Siflow PyTorch Job**
+: with the following command:
    ```bash
    cd ${DEEP_LEARNING_EXAMPLES_DIR}/training/nemo/neva
    ./run_nemo_neva_llama2_13b_chat_bf16.sh
@@ -41,7 +43,8 @@ NeVa builds upon LLaVA (Large Language and Vision Assistant) and supports severa
 - [launcher_scripts/k8s/training/neva](https://github.com/sallylxl/deep_learning_examples/tree/master/launcher_scripts/k8s/training/nemo/neva)
   : Scripts to launch pytorchjob on a k8s cluster for NeVa pretraining
 
-1. **Update Variables**: Edit the example script, taking `neva_llama2_7b_chat_bf16` pretraining for example. Modify the following variables in [launch_nemo_neva_llama2_7b_bf16.sh](https://github.com/sallylxl/deep_learning_examples/blob/master/launcher_scripts/k8s/training/nemo/neva/launch_nemo_neva_llama2_7b_bf16.sh):
+- **Update Variables**
+: Edit the example script, taking `neva_llama2_7b_chat_bf16` pretraining for example. Modify the following variables in [launch_nemo_neva_llama2_7b_bf16.sh](https://github.com/sallylxl/deep_learning_examples/blob/master/launcher_scripts/k8s/training/nemo/neva/launch_nemo_neva_llama2_7b_bf16.sh):
    - `DEEP_LEARNING_EXAMPLES_DIR`: Path to the repository (default: `/workspace/deep_learning_examples`).
    - `BASE_RESULT_DIR`: Directory for experiment results (default: `$DEEP_LEARNING_EXAMPLES_DIR/results`).
    - `PRETRAINED_LLM_PATH`: Path to LLM model checkpoints and tokenizer (default: Siflow preset model path - `/models/preset/scitix/hf-to-nemo/Llama-2-7b-chat`). Refer to the [Nemo Framework documentation](https://docs.nvidia.com/nemo-framework/user-guide/latest/multimodalmodels/multimodallanguagemodel/neva/dataprep.html)for preparing model checkpoints. 
@@ -50,7 +53,8 @@ NeVa builds upon LLaVA (Large Language and Vision Assistant) and supports severa
    - `WORLD_SIZE`: Number of GPU nodes for Siflow PyTorch job (automatically set).
 
 
-2. Lanuch a Pytorchjob using the following command：
+- **Lanuch command**
+：
   ```
   cd ${DEEP_LEARNING_EXAMPLES_DIR}/launcher_scripts/k8s/training/nemo/neva
   ./launch_nemo_neva_llama2_7b_bf16.sh

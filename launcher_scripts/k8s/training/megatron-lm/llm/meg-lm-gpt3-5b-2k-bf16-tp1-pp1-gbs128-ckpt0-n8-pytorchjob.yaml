@@ -22,7 +22,7 @@ spec:
                DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
                BASE_RESULTS_DIR=/workspace/deep_learning_examples/results \
                RUN_ID=0923t2258 GBS=128 MBS=4 PP=1 TP=1 MAX_STEPS=128 \
-               ENABLE_CKPT=0 MOCK_DATA=true D\
+               ENABLE_CKPT=0 MOCK_DATA=true \
                bash /workspace/deep_learning_examples/training/Megatron-LM/llm/gpt3/run_meg_lm_gpt3_5b_2k_bf16.sh"
             command:
             - /usr/bin/env

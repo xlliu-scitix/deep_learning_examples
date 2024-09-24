@@ -4,17 +4,18 @@ This repository contains example scripts for deep learning, including pretrainin
 
 ## Scripts Overview
 
-### LLM Pretraining
+### Pretraining Guide
 
-- **[training/nemo/llm](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm)**  
-  Scripts for LLM pretraining (e.g., GPT-3, LLaMA2, LLaMA3, NeMoTron) with recommended config (from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher)) on NVIDIA H100, in fp16 data type, running on NeMo Framework
-  - [llama2_13b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/llama2_13b_bf16)
-  - [llama2_70b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/llama2_70b_bf16)
-  - [llama3_1_70b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/llama3_1_70b_bf16)
-  - [gpt3_175b_2k_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/gpt3_175b_2k_bf16)
-  - [nemotron_340b_bf16](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm/nemotron_340b_bf16)
+#### Large Language Models
 
-### Multimodal Models
+- [NeMo LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/llm)
+: Contains example scripts for pretraining LLM Models using the [NeMo Framework](https://docs.nvidia.com/nemo-framework/user-guide/latest/).  These scripts are adapted from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher/tree/main)
+- [Megatron-LM LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-LM/llm)
+: Contains example scripts for pretraining LLM Models that adapted from [Megatron-LM](https://github.com/NVIDIA/Megatron-LM).
+- [Megatron-DeepSpeed LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-DeepSpeed/llm)
+: Contains example scripts for pretraining LLM Models that adapted from [Megatron-DeepSpeed](https://github.com/microsoft/Megatron-DeepSpeed)
+
+#### Multimodal Models
 
 - [training/nemo/neva](https://github.com/sallylxl/deep_learning_examples/tree/master/training/nemo/neva)
   : Scripts to Multimodal Models - NeVa (LLaVA) pretraining with recommended config (from [NeMo-Framework-Launcher](https://github.com/NVIDIA/NeMo-Framework-Launcher)) on NVIDIA H100, in fp16 data type, running on NeMo Framework
@@ -25,7 +26,7 @@ This repository contains example scripts for deep learning, including pretrainin
 Before running the examples, ensure the following:
 - **Container**: Use the ScitiX NeMo container (`registry-ap-southeast.scitix.ai/hpc/nemo:24.07`) or the NGC NeMo container (`nemo:24.07`). If using NGC, clone this repository into the container or a shared storage accessible by distributed worker containers.
 - **Datasets**: Refer to the README.md under [deep_learning_examples/training](https://github.com/sallylxl/deep_learning_examples/tree/master/training) for dataset preparation.
-  - For LLM based on Megatron, mock data can be used.
+  - For LLM based on NeMo or Megatron-LM, mock data can be used.
   - For ScitiX SiFlow or CKS, preset datasets are available.
 - **Pretrained Models**: Prepare corresponding pretrained models for fine-tuning and multimodal pretraining. Preset models are available for ScitiX SiFlow or CKS.
 

@@ -1,0 +1,13 @@
+title: Deep Learning Examples
+description: Port of the Read the Docs theme to Jekyll to use with GitHub Pages.
+remote_theme: carlosperate/jekyll-theme-rtd
+
+# Theme settings:
+site_author: sallylxl
+repo_url: "https://github.com/sallylxl/deep_learning_examples.git"
+edit_on_github: true
+github_docs_folder: true
+sticky_navigation: true
+prev_next_buttons_location: bottom
+search_enabled: true
+hljs_style: github-gist
