@@ -18,7 +18,7 @@ This repository contains example scripts for deep learning.
 - [Megatron-LM LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-LM/llm)
 : Contains example scripts for pretraining LLM Models that adapted from [Megatron-LM](https://github.com/NVIDIA/Megatron-LM).
 - [Megatron-DeepSpeed LLM Pretraining Scripts](https://github.com/sallylxl/deep_learning_examples/tree/master/training/Megatron-DeepSpeed/llm)
-: Contains example scripts for pretraining LLM Models that adapted from[Megatron-DeepSpeed](https://github.com/microsoft/Megatron-DeepSpeed)
+: Contains example scripts for pretraining LLM Models that adapted from [Megatron-DeepSpeed](https://github.com/microsoft/Megatron-DeepSpeed)
 
 #### Multimodal Models
 
