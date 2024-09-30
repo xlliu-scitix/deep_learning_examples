@@ -12,9 +12,8 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
-          labels:
-            scitix.ai/topo-aware-in-node: "true"
         spec: &job-spec
+          terminationGracePeriodSeconds: 1
           containers:
           - args:
             - "export NODE_RANK=$RANK && unset RANK && \
@@ -35,31 +34,32 @@ spec:
                   fieldPath: metadata.name
             - name: TZ
               value: CST-8
-            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07
+            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07-sicl
             imagePullPolicy: Always 
             name: pytorch
             resources:
               limits:
-                cpu: "80"
-                memory: 800Gi
                 nvidia.com/gpu: "8"
-                rdma/hca_shared_devices_all: "1"
               requests:
-                cpu: "80"
-                memory: 800Gi
                 nvidia.com/gpu: "8"
-                rdma/hca_shared_devices_all: "1"
             securityContext:
+              privileged: true
               capabilities:
                 add:
                 - IPC_LOCK
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
+            - mountPath: /dev/infiniband
+              name: ib
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
+          - hostPath:
+              path: /dev/infiniband
+              type: ""
+            name: ib
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -76,7 +76,5 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
-          labels:
-            scitix.ai/topo-aware-in-node: "true"
         spec:
           <<: *job-spec

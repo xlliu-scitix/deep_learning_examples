@@ -2,7 +2,7 @@
 
 set -ex
 
-GPU_NUMS=${GPU_NUMS:-32}
+GPU_NUMS=${GPU_NUMS:-80}
 if [ $GPU_NUMS -eq 8 ];then
     WORKER_NUMS=0
     WORLD_SIZE=1
@@ -42,7 +42,7 @@ fi
 MAX_STEPS=${MAX_STEPS:-128}
 ENABLE_CKPT=${ENABLE_CKPT:-0}
 MOCK_DATA=${MOCK_DATA:-true}
-RUN_ID=$(date +"%m%dt%H%M")
+RUN_ID=${RUN_ID:-$(date +"%m%dt%H%M")}
 
 # Get the directory of the current script
 SCRIPT_DIR=$(realpath $(dirname $0))

@@ -4,10 +4,11 @@ set -ex
 
 # setup env
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export NCCL_IB_TIMEOUT=22
-export NCCL_NVLS_ENABLES=0
-export NCCL_NET_GDR_LEVEL=3
-export NCCL_IB_QPS_PER_CONNECTION=2
+#export NCCL_IB_TIMEOUT=22
+#export NCCL_NVLS_ENABLES=0
+#export NCCL_NET_GDR_LEVEL=3
+#export NCCL_IB_QPS_PER_CONNECTION=2
+
 if [ -n "$RANK" ];then
   export NODE_RANK=${RANK} # pytorchjob will set RANK but NODE_RANK
   unset RANK
@@ -51,8 +52,8 @@ EVAL_ITERS=${EVAL_ITERS:-10}
 ##set --save-interval to a very large number, effectively disabling saving ckpt for practical purposes
 ## same as EVAL_INTERVAL
 SAVE_INTERVAL=${SAVE_INTERVAL:-100}
-EVAL_INTERVAL=${EVAL_INTERVAL:-100}
-LOG_INTERVAL=${LOG_INTERVAL:-10}
+EVAL_INTERVAL=${EVAL_INTERVAL:-1000}
+LOG_INTERVAL=${LOG_INTERVAL:-1}
 
 # setup experiment result dir
 CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes

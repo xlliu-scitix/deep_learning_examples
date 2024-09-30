@@ -39,7 +39,7 @@ spec:
                   fieldPath: metadata.name
             - name: TZ
               value: CST-8
-            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07
+            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07-sicl
             imagePullPolicy: Always 
             name: pytorch
             resources:
