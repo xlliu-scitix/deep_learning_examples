@@ -1,0 +1,50 @@
+diff --git a/megatron/core/pipeline_parallel/schedules.py b/megatron/core/pipeline_parallel/schedules.py
+index f082dbc6..0132fb3b 100644
+--- a/megatron/core/pipeline_parallel/schedules.py
++++ b/megatron/core/pipeline_parallel/schedules.py
+@@ -264,6 +264,8 @@ def forward_step(
+     set_input_tensor = get_attr_wrapped_model(model, "set_input_tensor")
+     set_input_tensor(input_tensor)
+
++    if config.timers is not None:
++        config.timers('forward-step', log_level=2).start()
+     if config.enable_autocast:
+         context_manager = torch.autocast("cuda", dtype=config.autocast_dtype)
+     else:
+@@ -276,7 +278,12 @@ def forward_step(
+                 data_iterator, model, checkpoint_activations_microbatch
+             )
+
++    if config.timers is not None:
++        config.timers('forward-step').stop()
++
+     num_tokens = torch.tensor(0, dtype=torch.int)
++    if config.timers is not None:
++        config.timers('forward-loss', log_level=2).start()
+     if parallel_state.is_pipeline_last_stage():
+         if not collect_non_loss_data:
+             outputs = loss_func(output_tensor)
+@@ -295,6 +302,9 @@ def forward_step(
+             data = loss_func(output_tensor, non_loss_data=True)
+             forward_data_store.append(data)
+
++    if config.timers is not None:
++        config.timers('forward-loss').stop()
++
+     if config.timers is not None:
+         config.timers('forward-compute').stop()
+
+diff --git a/megatron/training/training.py b/megatron/training/training.py
+index 7d60f41f..68a9221d 100644
+--- a/megatron/training/training.py
++++ b/megatron/training/training.py
+@@ -826,6 +826,8 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
+         'forward-compute',
+         'backward-compute',
+         'batch-generator',
++        'forward-step',
++        'forward-loss',
+         'forward-recv',
+         'forward-send',
+         'backward-recv',
+
