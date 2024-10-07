@@ -1,0 +1,46 @@
+diff --git a/megatron/training/training.py b/megatron/training/training.py
+index 7d60f41f..8ff12a92 100644
+--- a/megatron/training/training.py
++++ b/megatron/training/training.py
+@@ -940,6 +940,27 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
+         moe_loss_scale = 1 / get_num_microbatches()
+         track_moe_metrics(moe_loss_scale, iteration, writer, wandb_writer, total_loss_dict, args.moe_per_layer_logging)
+ 
++    timers_to_log_level_1 = [
++        'forward-backward',
++        'layernorm-grads-all-reduce',
++        'embedding-grads-all-reduce',
++        'all-grads-sync',
++        'params-all-gather',
++        'optimizer-copy-to-main-grad',
++        'optimizer-unscale-and-check-inf',
++        'optimizer-clip-main-grad',
++        'optimizer-count-zeros',
++        'optimizer-inner-step',
++        'optimizer-copy-main-to-model-params',
++        'optimizer']
++    
++    def add_log_string(timers, name, total_iterations):
++        elapsed_time = timers(name).elapsed(barrier=True)
++        elapsed_time_per_iteration = elapsed_time / total_iterations
++        log_string = ' %s time per iteration (ms): {:.1f} |'.format(name,
++            elapsed_time_per_iteration * 1000.0)
++        return log_string
++
+     if iteration % args.log_interval == 0:
+         elapsed_time = timers('interval-time').elapsed(barrier=True)
+         elapsed_time_per_iteration = elapsed_time / total_iterations
+@@ -973,6 +994,13 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
+                     writer.add_scalar('throughput', throughput, iteration)
+                 if wandb_writer:
+                     wandb_writer.log({'throughput': throughput}, iteration)
++        if args.timing_log_level == 1:
++            for item in timers_to_log_level_1:
++                log_string += add_log_string(timers, item, total_iterations)
++        elif args.timing_log_level == 2:
++            for item in timers_to_log:
++                log_string += add_log_string(timers, item, total_iterations)
++
+         assert learning_rate is not None
+         # Decoupled_learning_rate should be not None only on first and last pipeline stage.
+         log_string += ' learning rate: {:.6E} |'.format(learning_rate)
