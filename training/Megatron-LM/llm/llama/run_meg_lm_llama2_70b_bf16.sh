@@ -54,6 +54,8 @@ EVAL_ITERS=${EVAL_ITERS:-10}
 SAVE_INTERVAL=${SAVE_INTERVAL:-100}
 EVAL_INTERVAL=${EVAL_INTERVAL:-1000}
 LOG_INTERVAL=${LOG_INTERVAL:-1}
+TIMING_LOG_LEVEL=${TIMING_LOG_LEVEL:-0}
+TIMING_LOG_LEVEL=${TENSORBOARD_LOG_INTERVAL:-1}
 
 # setup experiment result dir
 CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
@@ -129,6 +131,8 @@ TRAINING_ARGS=(
     --sequence-parallel
     --use-flash-attn
     --use-distributed-optimizer
+    --timing-log-level ${TIMING_LOG_LEVEL}
+    --tensorboard-log-interval ${TENSORBOARD_LOG_INTERVAL}
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
