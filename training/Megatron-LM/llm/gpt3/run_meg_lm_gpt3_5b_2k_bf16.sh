@@ -51,8 +51,10 @@ EVAL_ITERS=${EVAL_ITERS:-10}
 ##set --save-interval to a very large number, effectively disabling saving ckpt for practical purposes
 ## same as EVAL_INTERVAL
 SAVE_INTERVAL=${SAVE_INTERVAL:-100}
-EVAL_INTERVAL=${EVAL_INTERVAL:-100}
-LOG_INTERVAL=${LOG_INTERVAL:-10}
+EVAL_INTERVAL=${EVAL_INTERVAL:-1000}
+LOG_INTERVAL=${LOG_INTERVAL:-1}
+TIMING_LOG_LEVEL=${TIMING_LOG_LEVEL:-0}
+TENSORBOARD_LOG_INTERVAL=${TENSORBOARD_LOG_INTERVAL:-1}
 
 # setup experiment result dir
 CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
@@ -71,6 +73,7 @@ DISTRIBUTED_ARGS=(
     --nnodes $NUM_NODES 
     --master_addr $MASTER_ADDR 
     --master_port $MASTER_PORT
+    --node_rank $NODE_RANK
 )
 
 # DISTRIBUTED_ARGS=(
@@ -106,6 +109,8 @@ TRAINING_ARGS=(
     --lr-decay-iters 430000
     --use-flash-attn
     --use-distributed-optimizer
+    --timing-log-level ${TIMING_LOG_LEVEL}
+    --tensorboard-log-interval ${TENSORBOARD_LOG_INTERVAL}
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then

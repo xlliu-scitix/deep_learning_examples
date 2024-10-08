@@ -51,8 +51,10 @@ EVAL_ITERS=${EVAL_ITERS:-10}
 ##set --save-interval to a very large number, effectively disabling saving ckpt for practical purposes
 ## same as EVAL_INTERVAL
 SAVE_INTERVAL=${SAVE_INTERVAL:-100}
-EVAL_INTERVAL=${EVAL_INTERVAL:-100}
-LOG_INTERVAL=${LOG_INTERVAL:-10}
+EVAL_INTERVAL=${EVAL_INTERVAL:-1000}
+LOG_INTERVAL=${LOG_INTERVAL:-1}
+TIMING_LOG_LEVEL=${TIMING_LOG_LEVEL:-0}
+TENSORBOARD_LOG_INTERVAL=${TENSORBOARD_LOG_INTERVAL:-1}
 
 # setup experiment result dir
 CURR_TIME=$(date +"%m%dT%H") # not %H%M as the start times of different workers may vary by several minutes
@@ -71,6 +73,7 @@ DISTRIBUTED_ARGS=(
     --nnodes $NUM_NODES 
     --master_addr $MASTER_ADDR 
     --master_port $MASTER_PORT
+    --node_rank $NODE_RANK
 )
 
 # DISTRIBUTED_ARGS=(
@@ -95,7 +98,7 @@ DISTRIBUTED_ARGS=(
 MODEL_ARGS=(
     --num-layers ${NUM_LAYERS} 
     --hidden-size ${HIDDEN_SIZE} 
-    --num-attention-heads ${NUM_ATTENTION_HEADS} 
+    --num-attention-heads ${NUM_ATTENTION_HEADS}
     --seq-length ${SEQ_LENGTH} 
     --max-position-embeddings ${SEQ_LENGTH}
     --attention-dropout 0
@@ -125,6 +128,8 @@ TRAINING_ARGS=(
     --sequence-parallel
     --use-flash-attn
     --use-distributed-optimizer
+    --timing-log-level ${TIMING_LOG_LEVEL}
+    --tensorboard-log-interval ${TENSORBOARD_LOG_INTERVAL}
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
@@ -162,7 +167,6 @@ EVAL_AND_LOGGING_ARGS=(
     --tensorboard-dir $TENSORBOARD_LOGS_DIR
     --log-throughput
 )
-
 
 # To fix Error: cannot import name ‘helpers’ from ‘megatron.core.datasets’
 cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
