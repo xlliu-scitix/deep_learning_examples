@@ -32,7 +32,7 @@ TP=${TP:-1}
 PP=${PP:-1}
 VPP=null
 CP=1
-GGBS=${GBS:-$((128*WORLD_SIZE))}
+GBS=${GBS:-$((128*WORLD_SIZE))}
 MBS=${MBS:-4}
 MAX_STEPS=${MAX_STEPS:-128}
 
