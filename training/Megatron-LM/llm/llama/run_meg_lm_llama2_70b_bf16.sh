@@ -36,7 +36,7 @@ MIN_LR=3.0e-5
 INIT_STD=0.01
 TP=${TP:-4}
 PP=${PP:-4}
-GGBS=${GBS:-$((128*WORLD_SIZE))}
+GBS=${GBS:-$((128*WORLD_SIZE))}
 MBS=${MBS:-1}
 
 # setup training parameters
@@ -72,6 +72,7 @@ DISTRIBUTED_ARGS=(
     --nnodes $NUM_NODES 
     --master_addr $MASTER_ADDR 
     --master_port $MASTER_PORT
+    --node_rank $NODE_RANK
 )
 
 # DISTRIBUTED_ARGS=(
