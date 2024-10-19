@@ -7,7 +7,13 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 #export NCCL_IB_TIMEOUT=22
 #export NCCL_NVLS_ENABLES=0
 #export NCCL_NET_GDR_LEVEL=3
-#export NCCL_IB_QPS_PER_CONNECTION=2
+export NCCL_IB_SL=${NCCL_IB_SL:-0}
+export NCCL_IB_QPS_PER_CONNECTION=${NCCL_IB_QPS_PER_CONNECTION:-4}
+if [ "x$PYTHONPYCACHEPREFIX" != "xNone" ] && [ "x$PYTHONPYCACHEPREFIX" != "x" ]; then
+  export PYTHONPYCACHEPREFIX=$PYTHONPYCACHEPREFIX
+  python -c 'from matplotlib import font_manager; font_manager._load_fontmanager(try_read_cache=False)'
+fi
+
 
 if [ -n "$RANK" ];then
   export NODE_RANK=${RANK} # pytorchjob will set RANK but NODE_RANK
@@ -16,11 +22,10 @@ fi
 
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
-DATA_DIR=${DATA_DIR:-/datasets/preset/bigscience/oscar-en}
 BASE_RESULTS_DIR=${BASE_RESULTS_DIR:-${DEEP_LEARNING_EXAMPLES_DIR}/results}
-VOCAB_FILE=${VOCAB_FILE:-${DATA_DIR}/gpt2-vocab.json}
-MERGE_FILE=${MERGE_FILE:-${DATA_DIR}/gpt2-merges.txt}
-DATA_PATH=${DATA_PATH:-${DATA_DIR}/meg-gpt2_text_document}
+BPE_DIR=${BPE_DIR:-/datasets/preset/bigscience/oscar-en}
+#DATA_PATH=${DATA_PATH:-/datasets/preset/bigscience/oscar-en/meg-gpt2_text_document}
+DATA_PATH="0.5 /datasets/preset/dataset_c4_spm/preprocessed_c4_spm/c4_en_6_c4_spm_text_document 0.5 /datasets/preset/dataset_c4_spm/preprocessed_c4_spm/c4_en_7_c4_spm_text_document"
 
 # Runs the "70B" parameter model
 ## Llama2 models use 2K sequence length/context window
@@ -49,6 +54,8 @@ WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
 MAX_STEPS=${MAX_STEPS:-128}
 EVAL_ITERS=${EVAL_ITERS:-10}
+NUM_DLWORKERS=${NUM_DLWORKERS:-2}
+
 ##set --save-interval to a very large number, effectively disabling saving ckpt for practical purposes
 ## same as EVAL_INTERVAL
 SAVE_INTERVAL=${SAVE_INTERVAL:-100}
@@ -133,6 +140,7 @@ TRAINING_ARGS=(
     --use-distributed-optimizer
     --timing-log-level ${TIMING_LOG_LEVEL}
     --tensorboard-log-interval ${TENSORBOARD_LOG_INTERVAL}
+    --num-workers ${NUM_DLWORKERS}
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
@@ -156,8 +164,8 @@ if [[ $(echo "$MOCK_DATA" |tr '[:upper:]' '[:lower:]') == "true" ||  $MOCK_DATA 
 else
     DATA_ARGS=(
         --data-path $DATA_PATH 
-        --vocab-file $VOCAB_FILE 
-        --merge-file $MERGE_FILE 
+        --vocab-file ${BPE_DIR}/gpt2-vocab.json
+        --merge-file ${BPE_DIR}/gpt2-merges.txt
         --split 949,50,1
     )
 fi
@@ -167,18 +175,36 @@ EVAL_AND_LOGGING_ARGS=(
     --save-interval $SAVE_INTERVAL
     --eval-interval $EVAL_INTERVAL 
     --eval-iters $EVAL_ITERS
-    --tensorboard-dir $TENSORBOARD_LOGS_DIR
+    #--tensorboard-dir $TENSORBOARD_LOGS_DIR
     --log-throughput
 )
 
-
 # To fix Error: cannot import name ‘helpers’ from ‘megatron.core.datasets’
-cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
-g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
+#cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
+#g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
 
-torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
-    ${MODEL_ARGS[@]} \
-    ${TRAINING_ARGS[@]} \
-    ${MODEL_PARALLEL_ARGS[@]} \
-    ${DATA_ARGS[@]} \
-    ${EVAL_AND_LOGGING_ARGS[@]} 2>&1 |tee ${RESULTS_DIR}/log_${MODEL}.out 
+if [[ ${NODE_RANK} -eq $((NUM_NODES- 1)) ]] && [[ $EXPORT_METRICS -eq 1 ]]; then
+    #torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
+    torchrun ${DISTRIBUTED_ARGS[@]} /opt/megatron-lm/pretrain_gpt.py \
+        ${MODEL_ARGS[@]} \
+        ${TRAINING_ARGS[@]} \
+        ${MODEL_PARALLEL_ARGS[@]} \
+        ${DATA_ARGS[@]} \
+        ${EVAL_AND_LOGGING_ARGS[@]} 2>&1 |tee ${RESULTS_DIR}/log_${MODEL}.out${NODE_RANK} &
+
+    PID=$!
+
+    python3 ${DEEP_LEARNING_EXAMPLES_DIR}/scripts/monitor_meg_lm_train_perf_metrics.py monitor-meg-lm \
+            -t ${MODEL}_tp${TP}_pp${PP}_n${WORLD_SIZE}_gbs${GBS}_mbs${MBS}_${RUN_ID} -p $PID \
+            -i ${RESULTS_DIR}/log_${MODEL}.out${NODE_RANK} -o /tmp/llm_performance_metrics.prom
+    
+    wait $PID # wait the background torchrun process to finish
+else
+    #torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
+    torchrun ${DISTRIBUTED_ARGS[@]} /opt/megatron-lm/pretrain_gpt.py \
+        ${MODEL_ARGS[@]} \
+        ${TRAINING_ARGS[@]} \
+        ${MODEL_PARALLEL_ARGS[@]} \
+        ${DATA_ARGS[@]} \
+        ${EVAL_AND_LOGGING_ARGS[@]} 2>&1 |tee ${RESULTS_DIR}/log_${MODEL}.out${NODE_RANK}
+fi

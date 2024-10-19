@@ -6,12 +6,19 @@ set -ex
 export NCCL_IB_TIMEOUT=22
 export TRANSFORMERS_OFFLINE=0
 export TORCH_NCCL_AVOID_RECORD_STREAMS=1
-export NCCL_NVLS_ENABLE=0
+#export NCCL_NVLS_ENABLE=0
 export NVTE_DP_AMAX_REDUCE_INTERVAL=0
 export NVTE_ASYNC_AMAX_REDUCTION=1
 export NVTE_FUSED_ATTN=0
-export NCCL_IB_QPS_PER_CONNECTION=2
-export NCCL_NET_GDR_LEVEL=3
+export NCCL_IB_QPS_PER_CONNECTION=4
+#export NCCL_NET_GDR_LEVEL=3
+
+if [ "x$PYTHONPYCACHEPREFIX" != "xNone" ] && [ "x$PYTHONPYCACHEPREFIX" != "x" ]; then
+  export PYTHONPYCACHEPREFIX=$PYTHONPYCACHEPREFIX
+  python -c 'from matplotlib import font_manager; font_manager._load_fontmanager(try_read_cache=False)'
+fi
+
+
 if [ -n "$RANK" ];then
   export NODE_RANK=${RANK}
   unset RANK
