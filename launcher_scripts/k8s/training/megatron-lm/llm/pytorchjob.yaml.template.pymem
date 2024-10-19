@@ -61,8 +61,12 @@ spec:
             - name: dataset
               mountPath: /datasets/preset
           volumes:
-          - emptyDir:
-              medium: Memory
+          #- emptyDir:
+          #    medium: Memory
+          #  name: dev-shm
+          - hostPath:
+              path: /dev/shm
+              type: Directory
             name: dev-shm
           - hostPath:
               path: /data/scitix/deep_learning_examples
