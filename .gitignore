@@ -1,2 +1,4 @@
 results
 passwd
+*.pyc
+launcher_scripts/k8s/training/megatron-lm/llm/tmp/*

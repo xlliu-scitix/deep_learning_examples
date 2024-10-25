@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: gbs${GBS}-d${USE_DATA}-py${PYCACHE}-sl${NCCL_IB_SL}-n${GPU_NUMS}-${RUN_ID}
+  name: llama2-70b-gbs1024-ckpt0-n64-1018t1221
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -17,7 +17,8 @@ spec:
           containers:
           - args:
             - "export NODE_RANK=$RANK && unset RANK && \
-               export NCCL_IB_SL=${NCCL_IB_SL} && ${CMD}"
+               git clone --recursive https://github.com/sallylxl/deep_learning_examples.git /workspace/deep_learning_examples && \
+               DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples BASE_RESULTS_DIR=/workspace/deep_learning_examples/results      RUN_ID=1018t1221 GBS=1024 MBS=1 TP=4 PP=4  CP=0 MAX_STEPS=32      ENABLE_CKPT=0 UB_TP_COMM_OVERLAP=0 NFS=False      MOCK_DATA=1 DATA_DIR=/datasets/preset/bigscience/oscar-en      NCCL_IB_QPS_PER_CONNECTION= NUM_DLWORKERS=2      PYTHONPYCACHEPREFIX=None NCCL_IB_SL=3 EXPORT_METRICS=1      bash /workspace/deep_learning_examples/training/nemo/llm/llama2_70b_bf16/run_nemo_llama2_70b_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -38,44 +39,27 @@ spec:
             name: pytorch
             resources:
               limits:
-                cpu: "120"
-                memory: 1800Gi
                 nvidia.com/gpu: "8"
-                rdma/hca_shared_devices_all: "1"
               requests:
-                cpu: "120"
-                memory: 1800Gi
                 nvidia.com/gpu: "8"
-                rdma/hca_shared_devices_all: "1"
             securityContext:
+              privileged: true
               capabilities:
                 add:
                 - IPC_LOCK
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /workspace/deep_learning_examples
-              name: workspace
-            - mountPath: /tmp
-              name: tmp
-            - name: dataset
-              mountPath: /datasets/preset
+            - mountPath: /dev/infiniband
+              name: ib
           volumes:
           - emptyDir:
               medium: Memory
             name: dev-shm
           - hostPath:
-              path: /data/scitix/deep_learning_examples
+              path: /dev/infiniband
               type: ""
-            name: workspace
-          - hostPath:
-              path: /tmp 
-              type: Directory
-            name: tmp
-          - hostPath:
-              path: /data/scitix/datasets/preset
-              type: Directory
-            name: dataset
+            name: ib
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -86,7 +70,7 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: $WORKER_NUMS
+      replicas: 7
       restartPolicy: Never
       template:
         metadata:

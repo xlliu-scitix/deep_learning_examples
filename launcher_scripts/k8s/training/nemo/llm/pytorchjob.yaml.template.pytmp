@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: gbs${GBS}-d${USE_DATA}-py${PYCACHE}-sl${NCCL_IB_SL}-n${GPU_NUMS}-${RUN_ID}
+  name: ${JOB_PREFIX}-gbs${GBS}-d${USE_DATA}-py${PYCACHE}-sl${NCCL_IB_SL}-n${GPU_NUMS}-${RUN_ID}
   namespace: default
 spec: 
   pytorchReplicaSpecs:

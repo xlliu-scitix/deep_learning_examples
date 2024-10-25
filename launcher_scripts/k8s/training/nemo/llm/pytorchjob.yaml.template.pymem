@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: gbs${GBS}-d${USE_DATA}-py${PYCACHE}-sl${NCCL_IB_SL}-n${GPU_NUMS}-${RUN_ID}
+  name: ${JOB_PREFIX}-gbs${GBS}-d${USE_DATA}-py${PYCACHE}-sl${NCCL_IB_SL}-n${GPU_NUMS}-${RUN_ID}
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -61,8 +61,12 @@ spec:
             - name: dataset
               mountPath: /datasets/preset
           volumes:
-          - emptyDir:
-              medium: Memory
+          #- emptyDir:
+          #    medium: Memory
+          #  name: dev-shm
+          - hostPath:
+              path: /dev/shm
+              type: Directory
             name: dev-shm
           - hostPath:
               path: /data/scitix/deep_learning_examples

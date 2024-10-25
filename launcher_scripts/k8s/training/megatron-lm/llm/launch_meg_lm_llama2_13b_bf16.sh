@@ -41,20 +41,51 @@ fi
 
 MAX_STEPS=${MAX_STEPS:-128}
 ENABLE_CKPT=${ENABLE_CKPT:-0}
-MOCK_DATA=${MOCK_DATA:-true}
-RUN_ID=$(date +"%m%dt%H%M")
+MOCK_DATA=${MOCK_DATA:-1}
+RUN_ID=${RUN_ID:-$(date +"%m%dt%H%M")}
+NUM_DLWORKERS=${NUM_DLWORKERS:-2}
+EXPORT_METRICS=${EXPORT_METRICS:-0}
+PYCACHE=${PYCACHE:-0}
+TEMPLATE="pytorchjob.yaml.template.pytmp"
+case $PYCACHE in 
+  0)
+    PYTHONPYCACHEPREFIX=None
+    PYCACHE=0
+    TEMPLATE="pytorchjob.yaml.template"
+    ;;
+  "tmp")
+    PYTHONPYCACHEPREFIX=/tmp/.pycache
+    TEMPLATE="pytorchjob.yaml.template.pytmp"
+    ;;
+  "mem")
+    PYTHONPYCACHEPREFIX=/dev/shm/.pycache
+    TEMPLATE="pytorchjob.yaml.template.pymem"
+    ;;
+  *)
+   echo "Invalid PYCACHE"
+   exit 1
+esac
 
+NCCL_IB_SL=${NCCL_IB_SL:-3}
 # Get the directory of the current script
 SCRIPT_DIR=$(realpath $(dirname $0))
 envsubst_py=$(echo "$SCRIPT_DIR" |awk -F 'deep_learning_examples' '{print $1"/deep_learning_examples/launcher_scripts/envsubst.py"}')
 
-JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
+#JOB_PREFIX=$(echo $MODEL | sed 's/_/-/g') \
+#IMAGE=${IMAGE:-"-sicl"} \
+JOB_PREFIX="lm-llama2-13b" \
+USE_DATA=$((!MOCK_DATA)) \
+NCCL_IB_SL=${NCCL_IB_SL} \
+NUM_DLWORKERS=${NUM_DLWORKERS} \
+PYTHONPYCACHEPREFIX=${PYTHONPYCACHEPREFIX} PYCACHE=${PYCACHE} \
 GBS=${GBS} ENABLE_CKPT=${ENABLE_CKPT} \
 RANK="\$RANK" GPU_NUMS=${GPU_NUMS} WORKER_NUMS=${WORKER_NUMS} RUN_ID=${RUN_ID} \
-CMD="DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
-    RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS TP=$TP PP=$PP  MAX_STEPS=${MAX_STEPS} \
-    ENABLE_CKPT=${ENABLE_CKPT} MOCK_DATA=${MOCK_DATA} DATA_DIR=${DATA_DIR} \
-    bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-LM/llm/llama/run_${MODEL}.sh" \
-python3 $envsubst_py -i pytorchjob.yaml.template -o pytorchjob.yaml
+CMD="sleep inf && DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR} BASE_RESULTS_DIR=${BASE_RESULTS_DIR} \
+     RUN_ID=${RUN_ID} GBS=$GBS MBS=$MBS TP=$TP PP=$PP  MAX_STEPS=${MAX_STEPS} \
+     ENABLE_CKPT=${ENABLE_CKPT} MOCK_DATA=${MOCK_DATA} DATA_DIR=${DATA_DIR} \
+     NCCL_IB_QPS_PER_CONNECTION=${NCCL_IB_QPS_PER_CONNECTION} NUM_DLWORKERS=${NUM_DLWORKERS} \
+     PYTHONPYCACHEPREFIX=${PYTHONPYCACHEPREFIX} NCCL_IB_SL=${NCCL_IB_SL} EXPORT_METRICS=${EXPORT_METRICS} \
+     bash ${DEEP_LEARNING_EXAMPLES_DIR}/training/Megatron-LM/llm/llama/run_${MODEL}.sh" \
+python3 $envsubst_py -i ${TEMPLATE} -o pytorchjob.yaml
 
 kubectl apply -f pytorchjob.yaml
