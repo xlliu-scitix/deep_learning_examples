@@ -36,7 +36,7 @@ INIT_STD=0.01
 TP=${TP:-2}
 PP=${PP:-1}
 SP=${SP:-1}
-GGBS=${GBS:-$((128*WORLD_SIZE))} #2048
+GBS=${GBS:-$((128*WORLD_SIZE))} #2048
 MBS=${MBS:-1}
 
 ZERO_STAGE=${ZERO_STAGE:-2}
@@ -115,20 +115,21 @@ if [ $ZERO_STAGE -gt 1 ]; then
 fi
 #DEEPSPEED_ARGS=" --ds-sequence-parallel-size $SP ${DEEPSPEED_ARGS}"
 
-DISTRIBUTED_ARGS=(
-    --nproc_per_node $GPUS_PER_NODE 
-    --nnodes $NUM_NODES 
-    --master_addr $MASTER_ADDR 
-    --master_port $MASTER_PORT
-)
-
 # DISTRIBUTED_ARGS=(
-#        --nproc_per_node $GPUS_PER_NODE
-#        --nnodes $NUM_NODES
-#        --rdzv-id 0
-#        --rdzv-backend c10d
-#        --rdzv-endpoint= $MASTER_ADDR:$MASTER_PORT
+#     --nproc_per_node $GPUS_PER_NODE 
+#     --nnodes $NUM_NODES 
+#     --node_rank $NODE_RANK 
+#     --master_addr $MASTER_ADDR 
+#     --master_port $MASTER_PORT
 # )
+
+DISTRIBUTED_ARGS=(
+       --nproc_per_node $GPUS_PER_NODE
+       --nnodes $NUM_NODES
+       --rdzv-id $RUN_ID
+       --rdzv-backend c10d
+       --rdzv-endpoint $MASTER_ADDR:$MASTER_PORT
+)
 
 # Below configuration required for llama model as per llama paper
 # --no-query-key-layer-scaling \
