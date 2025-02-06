@@ -36,7 +36,7 @@ INIT_STD=0.005
 TP=${TP:-1}
 PP=${PP:-1}
 SP=${SP:-1}
-GGBS=${GBS:-$((128*WORLD_SIZE))}
+GBS=${GBS:-$((128*WORLD_SIZE))}
 MBS=${MBS:-4}
 
 ZERO_STAGE=${ZERO_STAGE:-1}
@@ -114,20 +114,21 @@ if [ $ZERO_STAGE -gt 1 ]; then
   PP=1
 fi
 
-DISTRIBUTED_ARGS=(
-    --nproc_per_node $GPUS_PER_NODE 
-    --nnodes $NUM_NODES 
-    --master_addr $MASTER_ADDR 
-    --master_port $MASTER_PORT
-)
-
 # DISTRIBUTED_ARGS=(
-#        --nproc_per_node $GPUS_PER_NODE
-#        --nnodes $NUM_NODES
-#        --rdzv-id 0
-#        --rdzv-backend c10d
-#        --rdzv-endpoint= $MASTER_ADDR:$MASTER_PORT
+#     --nproc_per_node $GPUS_PER_NODE 
+#     --nnodes $NUM_NODES 
+#     --node_rank $NODE_RANK 
+#     --master_addr $MASTER_ADDR 
+#     --master_port $MASTER_PORT
 # )
+
+DISTRIBUTED_ARGS=(
+       --nproc_per_node $GPUS_PER_NODE
+       --nnodes $NUM_NODES
+       --rdzv-id $RUN_ID
+       --rdzv-backend c10d
+       --rdzv-endpoint $MASTER_ADDR:$MASTER_PORT
+)
 
 MODEL_ARGS=(
     --num-layers ${NUM_LAYERS} 
