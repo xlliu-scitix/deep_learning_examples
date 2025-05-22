@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1
 kind: PyTorchJob
 metadata:
-  name: ${JOB_PREFIX}-gbs${GBS}-ckpt${ENABLE_CKPT}-n${GPU_NUMS}-${RUN_ID}
+  name: meg-lm-llama2-70b-xlliu
   namespace: default
 spec: 
   pytorchReplicaSpecs:
@@ -12,14 +12,22 @@ spec:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
+          labels:
+            scitix.ai/topo-aware-in-node: "true"
         spec: &job-spec
-          terminationGracePeriodSeconds: 1
+          tolerations:
+          - key: "scitix.ai/nodecheck"
+            operator: "Exists"
+            effect: "NoSchedule"
           containers:
           - args:
             - "export NODE_RANK=$RANK && unset RANK && \
-               git clone --recursive https://github.com/sallylxl/deep_learning_examples.git /workspace/deep_learning_examples && \
-               python3 -c \"from matplotlib import font_manager; font_mnanager._load_fontmanager(try_read_cache=False)\" && \
-               ${CMD}"
+               pip install /data/xlliu/siflowai/python/dist/siflowai-0.1.0-cp312-cp312-linux_x86_64.whl && \
+               DEEP_LEARNING_EXAMPLES_DIR=/workspace/deep_learning_examples \
+               BASE_RESULTS_DIR=/workspace/deep_learning_examples/results \
+               RUN_ID=0 GBS=128 MBS=1 PP=4 TP=4 MAX_STEPS=1000 \
+               ENABLE_CKPT=1 MOCK_DATA=true \
+               bash /workspace/deep_learning_examples/training/Megatron-LM/llm/llama/run_meg_lm_llama2_70b_bf16.sh"
             command:
             - /usr/bin/env
             - bash
@@ -35,39 +43,44 @@ spec:
                   fieldPath: metadata.name
             - name: TZ
               value: CST-8
-            - name: PYTHONPYCACHEPREFIX 
-              value: /tmp/.pycache
-            image: registry-ap-southeast.scitix.ai/hpc/nemo:24.07-sicl
+            image: registry-ap-southeast.scitix.ai/hpc/nemo:25.02.rc5
             imagePullPolicy: Always 
             name: pytorch
             resources:
               limits:
+                cpu: "80"
+                memory: 800Gi
                 nvidia.com/gpu: "8"
+                rdma/hca_shared_devices_all: "1"
               requests:
+                cpu: "80"
+                memory: 800Gi
                 nvidia.com/gpu: "8"
+                rdma/hca_shared_devices_all: "1"
             securityContext:
-              privileged: true
               capabilities:
                 add:
                 - IPC_LOCK
             volumeMounts:
             - mountPath: /dev/shm
               name: dev-shm
-            - mountPath: /dev/infiniband
-              name: ib
-            - mountPath: /tmp/.pycache
-              name: pycache
+            - mountPath: /workspace/deep_learning_examples
+              name: deep-learning-examples
+            - mountPath: /data/xlliu/siflowai
+              name: siflowai
           volumes:
-          - emptyDir:
-              medium: Memory
-            name: dev-shm
-          - hostPath:
-              path: /tmp/.pycache 
-            name: pycache
-          - hostPath:
-              path: /dev/infiniband
-              type: ""
-            name: ib
+          # - emptyDir:
+          #     medium: Memory
+          #   name: dev-shm
+          - name: deep-learning-examples
+            hostPath:
+              path: /data/xlliu/deep_learning_examples
+          - name: siflowai
+            hostPath:
+              path: /data/xlliu/siflowai
+          - name: dev-shm
+            hostPath:
+              path: /dev/shm
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -78,11 +91,13 @@ spec:
                         values:
                           - h100nvlink80
     Worker:
-      replicas: $WORKER_NUMS
+      replicas: 3
       restartPolicy: Never
       template:
         metadata:
           annotations:
             sidecar.istio.io/inject: "false"
+          labels:
+            scitix.ai/topo-aware-in-node: "true"
         spec:
           <<: *job-spec

@@ -169,6 +169,10 @@ EVAL_AND_LOGGING_ARGS=(
 cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
 g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
 
+cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM
+pip install -e .
+export PYTHONPATH=/workspace/deep_learning_examples/thirdparty/Megatron-LM/:$PYTHONPATH
+
 torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
     ${MODEL_ARGS[@]} \
     ${TRAINING_ARGS[@]} \

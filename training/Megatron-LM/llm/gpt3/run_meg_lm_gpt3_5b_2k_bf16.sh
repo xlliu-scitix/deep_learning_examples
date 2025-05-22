@@ -50,7 +50,7 @@ MAX_STEPS=${MAX_STEPS:-128}
 EVAL_ITERS=${EVAL_ITERS:-10}
 ##set --save-interval to a very large number, effectively disabling saving ckpt for practical purposes
 ## same as EVAL_INTERVAL
-SAVE_INTERVAL=${SAVE_INTERVAL:-100}
+SAVE_INTERVAL=${SAVE_INTERVAL:-20}
 EVAL_INTERVAL=${EVAL_INTERVAL:-100}
 LOG_INTERVAL=${LOG_INTERVAL:-10}
 
@@ -113,6 +113,9 @@ if [ $ENABLE_CKPT -ne 0 ];then
   TRAINING_ARGS+=(
       --save ${CHECKPOINT_PATH}
       --load ${LOAD_CHECKPOINT_PATH}
+    #   --non-persistent-save-interval 10
+    #   --non-persistent-ckpt-type "global"
+    #   --non-persistent-global-ckpt-dir ${RESULTS_DIR}/non-persistent-ckpt 
   )
 fi
 
@@ -146,8 +149,9 @@ EVAL_AND_LOGGING_ARGS=(
 )
 
 # To fix Error: cannot import name ‘helpers’ from ‘megatron.core.datasets’
-cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
-g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
+cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM
+pip install -e .
+export PYTHONPATH=${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/:$PATHONPATH
 
 torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
     ${MODEL_ARGS[@]} \
