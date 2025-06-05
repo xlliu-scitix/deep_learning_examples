@@ -13,7 +13,7 @@ if [ -n "$RANK" ];then
   export NODE_RANK=${RANK} # pytorchjob will set RANK but NODE_RANK
   unset RANK
 fi
-
+DIST_TIMEOUT_MINUTES=${DIST_TIMEOUT_MINUTES:-10}
 # setup workspace dir and base result dir
 DEEP_LEARNING_EXAMPLES_DIR=${DEEP_LEARNING_EXAMPLES_DIR:-"/workspace/deep_learning_examples"}
 DATA_DIR=${DATA_DIR:-/datasets/preset/bigscience/oscar-en}
@@ -81,6 +81,7 @@ DISTRIBUTED_ARGS=(
        --rdzv-id $RUN_ID
        --rdzv-backend c10d
        --rdzv-endpoint $MASTER_ADDR:$MASTER_PORT
+       --distributed-timeout-minutes ${DIST_TIMEOUT_MINUTES}
 )
 
 # Below configuration required for llama model as per llama paper
@@ -171,6 +172,8 @@ EVAL_AND_LOGGING_ARGS=(
 # To fix Error: cannot import name ‘helpers’ from ‘megatron.core.datasets’
 cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
 g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
+
+set -o pipefail
 
 torchrun ${DISTRIBUTED_ARGS[@]} ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/pretrain_gpt.py \
     ${MODEL_ARGS[@]} \
