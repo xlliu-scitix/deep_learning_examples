@@ -169,10 +169,8 @@ EVAL_AND_LOGGING_ARGS=(
     --log-throughput
 )
 
-
-# To fix Error: cannot import name ‘helpers’ from ‘megatron.core.datasets’
-cd ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM/megatron/core/datasets
-g++ -O3 -Wall -shared -std=c++11 -fPIC -fdiagnostics-color -I/usr/include/python3.10 -I/usr/local/lib/python3.10/dist-packages/pybind11/include helpers.cpp -o helpers.cpython-310-x86_64-linux-gnu.so 
+pip install -e ${DEEP_LEARNING_EXAMPLES_DIR}/thirdparty/Megatron-LM
+python -c "import megatron; print(megatron.__file__)"
 
 set -o pipefail
 
