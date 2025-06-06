@@ -128,6 +128,7 @@ TRAINING_ARGS=(
     --sequence-parallel
     --use-flash-attn
     --use-distributed-optimizer
+    --distributed-timeout-minutes ${DIST_TIMEOUT_MINUTES}
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then

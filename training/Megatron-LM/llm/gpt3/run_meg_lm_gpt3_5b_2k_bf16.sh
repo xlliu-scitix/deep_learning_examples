@@ -82,7 +82,6 @@ DISTRIBUTED_ARGS=(
        --rdzv-id $RUN_ID
        --rdzv-backend c10d
        --rdzv-endpoint $MASTER_ADDR:$MASTER_PORT
-       --distributed-timeout-minutes ${DIST_TIMEOUT_MINUTES}
 )
 
 MODEL_ARGS=(
@@ -110,6 +109,7 @@ TRAINING_ARGS=(
     --lr-decay-iters 430000
     --use-flash-attn
     --use-distributed-optimizer
+    --distributed-timeout-minutes ${DIST_TIMEOUT_MINUTES}
 )
 
 if [ $ENABLE_CKPT -ne 0 ];then
